@@ -1,0 +1,27 @@
+{
+  "common": {
+    "welcome": "Welcome to Wamini",
+    "market": "Market",
+    "prices": "Prices",
+    "negotiation": "Negotiation",
+    "profile": "Profile",
+    "search": "Search",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "nav": {
+      "market": "MARKET",
+      "prices": "PRICES",
+      "negotiation": "NEGOTIATION",
+      "profile": "MY PROFILE"
+    },
+    "categories": {
+      "all": "All",
+      "products": "Products",
+      "transport": "Transport",
+      "inputs": "Inputs"
+    },
+    "advertise": "ADVERTISE",
+    "no_products_found": "No products found"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "common": {
+    "welcome": "Mwaakheleliwa Wamini",
+    "market": "Mercado",
+    "prices": "Preços",
+    "negotiation": "Negociação",
+    "profile": "Perfil",
+    "search": "Waavya",
+    "login": "Ovolowa",
+    "register": "Wiireliha",
+    "logout": "Okhuma",
+    "nav": {
+      "market": "MERCADO",
+      "prices": "PREÇOS",
+      "negotiation": "NEGOCIAÇÃO",
+      "profile": "MEU PERFIL"
+    },
+    "categories": {
+      "all": "Tudo",
+      "products": "Produtos",
+      "transport": "Transporte",
+      "inputs": "Insumos"
+    },
+    "advertise": "WIIRELIHA",
+    "no_products_found": "Khivo echu ephwanyiwale"
+  }
+}

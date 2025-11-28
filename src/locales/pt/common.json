@@ -1,0 +1,38 @@
+{
+  "common": {
+    "welcome": "Bem-vindo ao Wamini",
+    "market": "Mercado",
+    "prices": "Preços",
+    "negotiation": "Negociação",
+    "profile": "Perfil",
+    "search": "Procurar",
+    "login": "Entrar",
+    "register": "Registrar",
+    "logout": "Sair",
+    "nav": {
+      "market": "MERCADO",
+      "prices": "PREÇOS",
+      "negotiation": "NEGOCIAÇÃO",
+      "profile": "MEU PERFIL"
+    },
+    "categories": {
+      "all": "Tudo",
+      "products": "Produtos",
+      "transport": "Transporte",
+      "inputs": "Insumos"
+    },
+    "advertise": "ANUNCIAR",
+    "no_products_found": "Nenhum produto encontrado",
+    "advertise_modal": {
+      "title": "ANUNCIAR",
+      "name": "Nome",
+      "quantity": "Quantidade",
+      "price": "Preço",
+      "location_placeholder": "Nametil",
+      "details": "Detalhes",
+      "submit": "SUBMETER",
+      "success": "Anúncio criado com sucesso!",
+      "market_price_hint": "O Preço de mercado é 50mts/kg"
+    }
+  }
+}
