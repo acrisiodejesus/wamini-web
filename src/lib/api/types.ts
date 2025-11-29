@@ -19,10 +19,9 @@ export interface User {
 
 export interface RegisterData {
   name: string;
-  email: string;
+  localization: string;
+  mobile_number: string;
   password: string;
-  mobile_number?: string;
-  address?: string;
 }
 
 export interface LoginData {

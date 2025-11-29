@@ -49,20 +49,7 @@ export default function MarketPage() {
     <>
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
           
-        <header className="bg-white p-4 md:p-6  shadow-sm sticky top-0 z-10">
-          <div className='flex justify-between items-center'>
-            <h1 className="text-2xl md:text-3xl font-black logo-wamini">
-              Wamini
-            </h1>
-            <div className="flex gap-3">
-              <LanguageSwitcher />
-              <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
-                <Settings size={24} />
-              </Link>
-            </div>
-          </div>
-        <Sidebar />
-        </header>
+        
         <main className="p-4 md:p-8">
           <MarketFilters 
             onSearch={setSearchQuery} 

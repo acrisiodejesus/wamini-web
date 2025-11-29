@@ -23,11 +23,10 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Sidebar />
-      <MobileNav />
       
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
         <header className="bg-white p-4 md:p-6 flex justify-between items-center shadow-sm sticky top-0 z-10">
+      <Sidebar />
           <h1 className="text-2xl md:text-3xl font-black logo-wamini">
             Wamini
           </h1>

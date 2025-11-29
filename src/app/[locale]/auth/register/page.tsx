@@ -12,7 +12,7 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
   email: z.string().email('Email inválido'),
   phone: z.string().min(9, 'Número inválido'),
-  address: z.string().min(1, 'Selecione um distrito'),
+  localization: z.string().min(1, 'Selecione um distrito'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   confirmPassword: z.string(),
   terms: z.boolean().refine(val => val === true, 'Você deve concordar com os termos'),
@@ -54,10 +54,9 @@ export default function RegisterPage() {
     try {
       await registerUser({
         name: data.name,
-        email: data.email,
         password: data.password,
-        mobile_number: data.phone, // API expects mobile_number
-        address: data.address,
+        mobile_number: data.phone, 
+        localization: data.localization,
       });
 
       router.push('/market');
@@ -108,7 +107,7 @@ export default function RegisterPage() {
 
         <div>
           <select
-            {...register('address')}
+            {...register('loclization')}
             className="w-full"
             defaultValue=""
           >
@@ -117,7 +116,7 @@ export default function RegisterPage() {
               <option key={district} value={district}>{district}</option>
             ))}
           </select>
-          {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+          {errors.localization && <p className="text-red-500 text-sm mt-1">{errors.localization.message}</p>}
         </div>
 
         <div>
