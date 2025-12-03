@@ -107,7 +107,7 @@ export default function RegisterPage() {
 
         <div>
           <select
-            {...register('loclization')}
+            {...register('localization')}
             className="w-full"
             defaultValue=""
           >
