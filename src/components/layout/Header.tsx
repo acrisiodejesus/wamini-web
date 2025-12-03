@@ -1,4 +1,7 @@
 import Sidebar from "./Sidebar";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { Link } from '@/i18n/routing';
+import { Settings } from 'lucide-react';
 
 export function Header() {
   return(
