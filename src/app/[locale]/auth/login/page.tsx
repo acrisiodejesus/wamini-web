@@ -9,7 +9,7 @@ import { Link, useRouter } from '@/i18n/routing';
 import { useAuth } from '@/hooks/useAuth';
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  mobile_number: z.string().min(10, 'Mobile number must be at least 10 digits'),
   password: z.string().min(6),
 });
 
@@ -46,17 +46,17 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div className="mb-4">
-              <label htmlFor="email-address" className="sr-only">Email</label>
+              <label htmlFor="mobile-number" className="sr-only">Mobile Number</label>
               <input
-                id="email-address"
-                type="email"
-                autoComplete="email"
+                id="mobile-number"
+                type="tel"
+                autoComplete="tel"
                 required
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                {...register('email')}
+                placeholder="Mobile number"
+                {...register('mobile_number')}
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+              {errors.mobile_number && <p className="text-red-500 text-xs mt-1">{errors.mobile_number.message}</p>}
             </div>
             <div>
               <label htmlFor="password" className="sr-only">Password</label>

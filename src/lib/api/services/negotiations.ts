@@ -4,75 +4,75 @@ import type {
   Message,
   CreateNegotiationData,
   SendMessageData,
-  ApiResponse,
-  PaginatedResponse,
-  PaginationParams
+  MessageResponse
 } from '../types';
 
 export const negotiationsService = {
   /**
    * Get all user negotiations
    */
-  async getNegotiations(pagination?: PaginationParams): Promise<PaginatedResponse<Negotiation>> {
-    const params = pagination;
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Negotiation>>>('/negotiations', { params });
-    return response.data.data;
+  async getNegotiations(): Promise<Negotiation[]> {
+    try {
+      const response = await apiClient.get<Negotiation[]>('/negotiations');
+      console.log('Negotiations API Response:', response.data);
+
+      // Backend returns array directly
+      const negotiations = Array.isArray(response.data) ? response.data : [];
+
+      return negotiations;
+    } catch (error: any) {
+      console.error('Error fetching negotiations:', error);
+      throw error;
+    }
   },
 
   /**
-   * Get single negotiation by ID
+   * Create new negotiation (start chat about a product/input/transport)
    */
-  async getNegotiation(id: number): Promise<Negotiation> {
-    const response = await apiClient.get<ApiResponse<Negotiation>>(`/negotiations/${id}`);
-    return response.data.data;
-  },
-
-  /**
-   * Create new negotiation (start chat about a product)
-   */
-  async createNegotiation(data: CreateNegotiationData): Promise<Negotiation> {
-    const response = await apiClient.post<ApiResponse<Negotiation>>('/negotiations', data);
-    return response.data.data;
+  async createNegotiation(data: CreateNegotiationData): Promise<{ message: string; negotiation_id: number }> {
+    try {
+      const response = await apiClient.post<{ message: string; negotiation_id: number }>('/negotiations', data);
+      console.log('Create Negotiation API Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating negotiation:', error);
+      throw error;
+    }
   },
 
   /**
    * Get messages for a negotiation
    */
-  async getMessages(negotiationId: number, pagination?: PaginationParams): Promise<PaginatedResponse<Message>> {
-    const params = pagination;
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Message>>>(
-      `/negotiations/${negotiationId}/messages`,
-      { params }
-    );
-    return response.data.data;
+  async getMessages(negotiationId: number): Promise<Message[]> {
+    try {
+      const response = await apiClient.get<Message[]>(`/negotiations/${negotiationId}/messages`);
+      console.log('Messages API Response:', response.data);
+
+      // Backend returns array directly
+      const messages = Array.isArray(response.data) ? response.data : [];
+
+      return messages;
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
   },
 
   /**
    * Send message in a negotiation
    */
-  async sendMessage(negotiationId: number, data: SendMessageData): Promise<Message> {
-    const response = await apiClient.post<ApiResponse<Message>>(
-      `/negotiations/${negotiationId}/messages`,
-      data
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Update negotiation status
-   */
-  async updateNegotiationStatus(
-    id: number,
-    status: 'active' | 'closed' | 'completed'
-  ): Promise<Negotiation> {
-    const response = await apiClient.patch<ApiResponse<Negotiation>>(`/negotiations/${id}`, { status });
-    return response.data.data;
-  },
-
-  /**
-   * Delete negotiation
-   */
-  async deleteNegotiation(id: number): Promise<void> {
-    await apiClient.delete(`/negotiations/${id}`);
+  async sendMessage(negotiationId: number, data: SendMessageData): Promise<MessageResponse> {
+    try {
+      const response = await apiClient.post<MessageResponse>(
+        `/negotiations/${negotiationId}/messages`,
+        data
+      );
+      console.log('Send Message API Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
   },
 };
+

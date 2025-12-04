@@ -19,17 +19,17 @@ function adaptApiProduct(apiProduct: ApiProduct): Product {
   return {
     id: apiProduct.id.toString(),
     name: apiProduct.name,
-    category: apiProduct.category,
+    category: 'General', // Default category since backend doesn't provide it
     price: apiProduct.price,
-    unit: apiProduct.unit,
+    unit: 'kg', // Default unit since backend doesn't provide it
     quantity: apiProduct.quantity || 0,
-    location: apiProduct.location || '',
-    seller: apiProduct.user ? {
-      id: apiProduct.user.id.toString(),
-      name: apiProduct.user.name,
-    } : { id: '', name: 'Unknown' },
-    image: apiProduct.images?.[0] || '/placeholder-product.jpg',
-    description: apiProduct.description,
+    location: '', // Backend doesn't provide location
+    seller: {
+      id: apiProduct.user_id.toString(),
+      name: 'Seller', // Backend doesn't return user info in product list
+    },
+    image: apiProduct.photo || '/placeholder-product.jpg',
+    description: '', // Backend doesn't provide description
   };
 }
 

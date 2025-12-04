@@ -35,7 +35,10 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     try {
       const authResponse = await authService.login(data);
-      setUser(authResponse.user);
+      // Login response only has partial user data (id, name)
+      // Fetch full profile to get mobile_number and other fields
+      const fullUser = await authService.getCurrentUser();
+      setUser(fullUser);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Login failed';
       setError(errorMessage);
@@ -50,8 +53,10 @@ export function useAuth(): UseAuthReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const authResponse = await authService.register(data);
-      setUser(authResponse.user);
+      await authService.register(data);
+      // Register response only has user_id
+      // User needs to login after registration
+      // So we don't set user here, registration page should redirect to login
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
       setError(errorMessage);

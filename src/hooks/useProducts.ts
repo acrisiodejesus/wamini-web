@@ -2,26 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { productsService } from '@/lib/api/services/products';
-import type { Product, ProductFilters, PaginatedResponse, PaginationParams } from '@/lib/api/types';
+import type { Product } from '@/lib/api/types';
 
 interface UseProductsReturn {
   products: Product[];
   total: number;
-  page: number;
-  totalPages: number;
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
 export function useProducts(
-  filters?: ProductFilters,
-  pagination?: PaginationParams
+  filters?: { category?: string; search?: string },
+  pagination?: { page?: number; per_page?: number }
 ): UseProductsReturn {
   const [products, setProducts] = useState<Product[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(pagination?.page || 1);
-  const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,11 +24,8 @@ export function useProducts(
     setIsLoading(true);
     setError(null);
     try {
-      const response = await productsService.getProducts(filters, pagination);
-      setProducts(response.data);
-      setTotal(response.total);
-      setPage(response.page);
-      setTotalPages(response.total_pages);
+      const data = await productsService.getProducts();
+      setProducts(data);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch products';
       setError(errorMessage);
@@ -41,7 +33,7 @@ export function useProducts(
     } finally {
       setIsLoading(false);
     }
-  }, [filters, pagination]);
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -49,55 +41,13 @@ export function useProducts(
 
   return {
     products,
-    total,
-    page,
-    totalPages,
+    total: products.length,
     isLoading,
     error,
     refetch: fetchProducts,
   };
 }
 
-interface UseProductReturn {
-  product: Product | null;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
+// Note: Backend doesn't support fetching single product by ID
+// If needed, filter from the products array instead
 
-export function useProduct(id: number | null): UseProductReturn {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProduct = useCallback(async () => {
-    if (!id) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await productsService.getProduct(id);
-      setProduct(data);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch product';
-      setError(errorMessage);
-      console.error('Failed to fetch product:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetchProduct();
-  }, [fetchProduct]);
-
-  return {
-    product,
-    isLoading,
-    error,
-    refetch: fetchProduct,
-  };
-}

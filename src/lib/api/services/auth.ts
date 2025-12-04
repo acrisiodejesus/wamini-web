@@ -1,23 +1,17 @@
 import apiClient, { setToken, clearToken, setStoredUser, getStoredUser } from '../client';
-import type { LoginData, RegisterData, AuthResponse, User, ApiResponse } from '../types';
+import type { LoginData, RegisterData, AuthResponse, UserProfile, RegisterResponse } from '../types';
 
 export const authService = {
   /**
    * Register a new user
    */
-  async register(data: RegisterData): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<RegisterResponse> {
     try {
-      const response = await apiClient.post<AuthResponse>('/users/register', data);
+      const response = await apiClient.post<RegisterResponse>('/users/register', data);
       console.log('Register API Response:', response.data);
 
-      const authData = response.data;
-
-      if (authData.token) {
-        setToken(authData.token);
-        setStoredUser(authData.user);
-      }
-
-      return authData;
+      // Backend returns { message, user_id } - no token yet
+      return response.data;
     } catch (error: any) {
       console.error('Error during registration:', error);
       throw error;
@@ -34,8 +28,9 @@ export const authService = {
 
       const authData = response.data;
 
-      if (authData.token) {
-        setToken(authData.token);
+      // Backend returns access_token, not token
+      if (authData.access_token) {
+        setToken(authData.access_token);
         setStoredUser(authData.user);
       }
 
@@ -56,10 +51,14 @@ export const authService = {
   /**
    * Get current user profile
    */
-  async getCurrentUser(): Promise<User> {
+  async getCurrentUser(): Promise<UserProfile> {
     try {
-      const response = await apiClient.get<User>('/users/me');
+      const response = await apiClient.get<UserProfile>('/users/profile');
       console.log('Get Current User API Response:', response.data);
+
+      // Update stored user with profile data
+      setStoredUser(response.data);
+
       return response.data;
     } catch (error: any) {
       console.error('Error fetching current user:', error);
@@ -68,24 +67,9 @@ export const authService = {
   },
 
   /**
-   * Update user profile
-   */
-  async updateProfile(data: Partial<User>): Promise<User> {
-    try {
-      const response = await apiClient.put<User>('/users/profile', data);
-      console.log('Update Profile API Response:', response.data);
-      setStoredUser(response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      throw error;
-    }
-  },
-
-  /**
    * Get stored user from localStorage
    */
-  getStoredUser(): User | null {
+  getStoredUser(): UserProfile | null {
     return getStoredUser();
   },
 
@@ -96,3 +80,4 @@ export const authService = {
     return !!getStoredUser();
   },
 };
+

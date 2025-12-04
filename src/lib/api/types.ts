@@ -1,173 +1,124 @@
-// API Response wrapper
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
-}
-
 // User types
 export interface User {
   id: number;
   name: string;
-  email: string;
-  mobile_number?: string;
-  address?: string;
-  created_at: string;
-  updated_at: string;
+  localization?: string;
+  mobile_number: string;
+  photo?: string;
+}
+
+export interface UserProfile extends User {
+  // Profile endpoint returns same fields as User
 }
 
 export interface RegisterData {
   name: string;
-  localization: string;
+  localization?: string;
+  mobile_number: string;
+  password: string;
+  photo?: string;
+}
+
+export interface LoginData {
   mobile_number: string;
   password: string;
 }
 
-export interface LoginData {
-  email: string;
-  password: string;
+export interface AuthResponse {
+  access_token: string;
+  user: {
+    id: number;
+    name: string;
+  };
 }
 
-export interface AuthResponse {
-  token: string;
-  user: User;
+export interface RegisterResponse {
+  message: string;
+  user_id: number;
 }
 
 // Product types
 export interface Product {
   id: number;
   name: string;
-  description: string;
+  quantity: number;
   price: number;
-  unit: string;
-  category: string;
-  quantity?: number;
-  location?: string;
-  images?: string[];
+  photo?: string;
+  publish_date: string;
   user_id: number;
-  user?: User;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateProductData {
   name: string;
-  description: string;
+  quantity: number;
   price: number;
-  unit: string;
-  category: string;
-  quantity?: number;
-  location?: string;
-  images?: string[];
-}
-
-export interface ProductFilters {
-  category?: string;
-  min_price?: number;
-  max_price?: number;
-  location?: string;
-  search?: string;
+  photo?: string;
 }
 
 // Input types (agricultural inputs)
 export interface Input {
   id: number;
   name: string;
-  description: string;
+  quantity: number;
   price: number;
-  unit: string;
-  category: string;
-  quantity?: number;
-  location?: string;
-  images?: string[];
+  photo?: string;
+  publish_date: string;
   user_id: number;
-  user?: User;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateInputData {
   name: string;
-  description: string;
+  quantity: number;
   price: number;
-  unit: string;
-  category: string;
-  quantity?: number;
-  location?: string;
-  images?: string[];
+  photo?: string;
 }
 
 // Transport types
 export interface Transport {
   id: number;
-  title: string;
-  description: string;
-  vehicle_type: string;
-  capacity: string;
-  price_per_km?: number;
-  available_from: string;
-  available_to: string;
-  location?: string;
+  transport_type: string;
+  name: string;
+  price_per_km: number;
+  photo?: string;
   user_id: number;
-  user?: User;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface CreateTransportData {
-  title: string;
-  description: string;
-  vehicle_type: string;
-  capacity: string;
-  price_per_km?: number;
-  available_from: string;
-  available_to: string;
-  location?: string;
+  transport_type: string;
+  name: string;
+  price_per_km: number;
+  photo?: string;
 }
 
 // Negotiation/Chat types
 export interface Negotiation {
   id: number;
-  product_id?: number;
-  product?: Product;
-  buyer_id: number;
-  buyer?: User;
-  seller_id: number;
-  seller?: User;
-  status: 'active' | 'closed' | 'completed';
+  messages: any[]; // Array of message objects
   created_at: string;
-  updated_at: string;
+  product_id?: number;
+  input_id?: number;
+  transport_id?: number;
 }
 
 export interface Message {
   id: number;
-  negotiation_id: number;
   sender_id: number;
-  sender?: User;
-  message: string;
-  created_at: string;
+  body: string;
+  timestamp: string;
 }
 
 export interface CreateNegotiationData {
-  product_id: number;
-  message: string;
+  product_id?: number;
+  input_id?: number;
+  transport_id?: number;
+  messages?: any[];
 }
 
 export interface SendMessageData {
+  body: string;
+}
+
+export interface MessageResponse {
   message: string;
-}
-
-// Pagination
-export interface PaginationParams {
-  page?: number;
-  per_page?: number;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
+  data: Message;
 }
