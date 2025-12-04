@@ -47,7 +47,10 @@ export default function MarketPage() {
 
   return (
     <>
+      <Sidebar />
+      
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
+
           
         
         <main className="p-4 md:p-8">

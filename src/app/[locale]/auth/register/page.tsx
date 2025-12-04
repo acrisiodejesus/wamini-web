@@ -10,7 +10,6 @@ import { Accessibility } from 'lucide-react';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
-  email: z.string().email('Email inválido'),
   phone: z.string().min(9, 'Número inválido'),
   localization: z.string().min(1, 'Selecione um distrito'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
@@ -59,9 +58,16 @@ export default function RegisterPage() {
         localization: data.localization,
       });
 
-      router.push('/market');
+      // Registration successful - redirect to login
+      // Backend doesn't auto-login, user must login after registration
+      router.push('/auth/login');
     } catch (error: any) {
-      setApiError(error.message || 'Erro ao criar conta. Tente novamente.');
+      // Handle specific error codes
+      if (error.response?.status === 409) {
+        setApiError('Este número de telefone já está registrado. Tente fazer login.');
+      } else {
+        setApiError(error.response?.data?.error || error.message || 'Erro ao criar conta. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,16 +89,6 @@ export default function RegisterPage() {
             className="w-full"
           />
           {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
-        </div>
-
-        <div>
-          <input
-            {...register('email')}
-            type="email"
-            placeholder="Seu Email"
-            className="w-full"
-          />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
 
         <div>
