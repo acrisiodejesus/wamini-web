@@ -5,15 +5,29 @@ import { Type, Eye, Volume2, Mic, X, MicOff } from 'lucide-react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type SpeechRecognitionEvent = Event & {
+type SpeechResultEvent = Event & {
   results: SpeechRecognitionResultList;
 };
+
+type SpeechRecognitionConstructor = new () => {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: Event & { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionInstance = InstanceType<SpeechRecognitionConstructor>;
 
 // Extender window para SpeechRecognition
 declare global {
   interface Window {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
@@ -58,7 +72,7 @@ export default function AccessibilityPanel() {
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState('');
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // ── Restore persisted settings on mount ──────────────────────────────────
   useEffect(() => {
@@ -181,7 +195,7 @@ export default function AccessibilityPanel() {
       setVoiceStatus('A ouvir…');
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechResultEvent) => {
       const transcript = event.results[0][0].transcript.toLowerCase().trim();
       setVoiceStatus(`"${transcript}"`);
       handleVoiceCommand(transcript);
