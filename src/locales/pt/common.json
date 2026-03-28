@@ -7,7 +7,7 @@
     "profile": "Perfil",
     "search": "Procurar",
     "login": "Entrar",
-    "register": "Registrar",
+    "register": "Registar",
     "logout": "Sair",
     "nav": {
       "market": "MERCADO",
@@ -33,6 +33,67 @@
       "submit": "SUBMETER",
       "success": "Anúncio criado com sucesso!",
       "market_price_hint": "O Preço de mercado é 50mts/kg"
+    },
+    "auth": {
+      "login_title": "Entrar",
+      "login_subtitle": "Bem-vindo de volta! Insira os seus dados.",
+      "register_title": "Criar conta",
+      "register_subtitle": "É rápido e gratuito.",
+      "phone_label": "Número de telemóvel",
+      "phone_placeholder": "84 000 0000",
+      "password_label": "Senha",
+      "password_placeholder": "••••••",
+      "name_label": "Nome completo",
+      "name_placeholder": "Seu nome",
+      "district_label": "Distrito",
+      "district_placeholder": "Selecione o seu distrito",
+      "confirm_password_label": "Confirmar senha",
+      "confirm_password_placeholder": "Repita a senha",
+      "terms_label": "Concordo com os termos e condições",
+      "no_account": "Não tem conta?",
+      "have_account": "Já tem conta?",
+      "forgot_password": "Esqueceu a senha?",
+      "creating": "A criar conta...",
+      "signing_in": "A entrar...",
+      "role_prompt": "Sou um(a)…",
+      "roles": {
+        "farmer": "Agricultor",
+        "transporter": "Transportador",
+        "seller": "Vendedor de Insumos",
+        "buyer": "Comprador"
+      }
+    },
+    "landing": {
+      "tagline": "O mercado digital de Nampula — preços justos, acesso fácil.",
+      "cta_start": "Começar agora",
+      "how_it_works": "Como funciona",
+      "how_subtitle": "Para cada actor do mercado",
+      "how_description": "O Wamini conecta todos os lados do mercado numa só plataforma simples.",
+      "trust_title": "Preços justos para quem produz.",
+      "trust_subtitle": "Pequenos agricultores de Nampula a vender directamente, sem intermediários.",
+      "cta_register": "Registar gratuitamente",
+      "profiles": {
+        "farmer_title": "Agricultores",
+        "farmer_desc": "Venda sua produção directamente ao mercado com preços justos.",
+        "transporter_title": "Transportadores",
+        "transporter_desc": "Encontre fretes e maximize o uso dos seus veículos.",
+        "seller_title": "Vendedores de Insumos",
+        "seller_desc": "Chegue a mais agricultores e aumente as suas vendas.",
+        "buyer_title": "Compradores",
+        "buyer_desc": "Compre directamente do produtor, frescos e com bom preço."
+      }
+    },
+    "settings": {
+      "title": "Definições",
+      "language": "Idioma",
+      "accessibility": "Acessibilidade",
+      "notifications": "Notificações",
+      "account": "Conta"
+    },
+    "errors": {
+      "login_failed": "Erro ao entrar. Tente novamente.",
+      "phone_taken": "Este número já está registado. Tente fazer login.",
+      "generic": "Erro inesperado. Tente novamente."
     }
   }
 }

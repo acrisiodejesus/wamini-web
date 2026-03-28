@@ -14,6 +14,7 @@
   /* Wamini Brand Colors */
   --color-wamini-yellow: #D8FF12;
   --color-wamini-orange: #FBB03B;
+  --color-wamini-green: #2D6A4F;
   --color-background: #FFFFFF;
   --color-foreground: #000000;
   --color-gray-50: #F9FAFB;
@@ -63,6 +64,11 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(251, 176, 59, 0.1);
 }
 
+/* Inputs com ícone à esquerda — sobrescreve o padding global */
+.input-icon-left {
+  padding-left: 2.75rem !important;
+}
+
 /* Gradient Button */
 .btn-gradient {
   background: linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%);
@@ -72,16 +78,70 @@ textarea:focus {
   border-radius: 1.5rem;
   padding: 0.75rem 2rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.3s;
 }
 
 .btn-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(251, 176, 59, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(251, 176, 59, 0.45);
 }
 
 .btn-gradient:active {
   transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(251, 176, 59, 0.2);
+}
+
+.btn-gradient:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Outline Button */
+.btn-outline {
+  background: transparent;
+  color: #000000;
+  font-weight: 700;
+  border: 2px solid #000000;
+  border-radius: 1.5rem;
+  padding: 0.75rem 2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  background: #000000;
+  color: #D8FF12;
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-wamini {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251,176,59,0.4); }
+  50%       { box-shadow: 0 0 0 10px rgba(251,176,59,0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s ease forwards;
+}
+
+.animate-pulse-wamini {
+  animation: pulse-wamini 2s infinite;
 }
 
 /* High Contrast Mode */

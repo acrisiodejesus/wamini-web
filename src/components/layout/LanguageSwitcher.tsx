@@ -31,15 +31,18 @@ export default function LanguageSwitcher() {
     });
   };
 
+  const currentLanguage = languages.find((l) => l.code === locale);
+
   return (
     <>
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
-        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-        aria-label="Change language"
+        className="flex items-center gap-2 px-3 py-2 rounded-full border-2 border-gray-200 hover:border-yellow-400 hover:bg-yellow-50 transition-all text-sm font-bold text-gray-700"
+        aria-label="Trocar idioma"
         disabled={isPending}
       >
-        <Globe size={24} />
+        <Globe size={18} className="text-gray-500 flex-shrink-0" />
+        <span>{currentLanguage?.label ?? 'Idioma'}</span>
       </button>
 
       {isOpen && (

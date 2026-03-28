@@ -4,48 +4,74 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
 import { useAuth } from '@/hooks/useAuth';
-import { Accessibility } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Phone, Lock, MapPin, AlertCircle, Sprout, Truck, ShoppingBag, Users } from 'lucide-react';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+
+const ROLE_ICONS = {
+  farmer:      { Icon: Sprout,      color: '#2D6A4F', bg: '#f0faf4' },
+  transporter: { Icon: Truck,       color: '#FBB03B', bg: '#fffbf0' },
+  seller:      { Icon: ShoppingBag, color: '#374151', bg: '#f3f4f6' },
+  buyer:       { Icon: Users,       color: '#1d4ed8', bg: '#eff6ff' },
+};
+
+const DISTRICTS = [
+  'Angoche',
+  'Eráti',
+  'Ilha de Moçambique',
+  'Lalaua',
+  'Larde',
+  'Liúpo',
+  'Malema',
+  'Meconta',
+  'Mecubúri',
+  'Memba',
+  'Mogincual',
+  'Mogovolas',
+  'Moma',
+  'Monapo',
+  'Mossuril',
+  'Muecate',
+  'Murrupula',
+  'Nacala-Porto',
+  'Nacala-a-Velha',
+  'Nacarôa',
+  'Nampula',
+  'Rapale',
+  'Ribáuè',
+];
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Nome muito curto'),
-  phone: z.string().min(9, 'Número inválido'),
-  localization: z.string().min(1, 'Selecione um distrito'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  role:            z.string().min(1),
+  name:            z.string().min(2),
+  phone:           z.string().min(9),
+  localization:    z.string().min(1),
+  password:        z.string().min(6),
   confirmPassword: z.string(),
-  terms: z.boolean().refine(val => val === true, 'Você deve concordar com os termos'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
+  terms:           z.boolean().refine((v) => v === true),
+}).refine((d) => d.password === d.confirmPassword, { path: ['confirmPassword'] });
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
-const DISTRICTS = [
-  'Nampula',
-  'Monapo',
-  'Murrupula',
-  'Nacala',
-  'Angoche',
-  'Ilha de Moçambique',
-  'Memba',
-  'Mossuril',
-];
-
 export default function RegisterPage() {
+  const t = useTranslations('common');
   const router = useRouter();
   const { register: registerUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterForm>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
+
+  const roleValue = watch('role');
+
+  const handleRoleSelect = (value: string) => {
+    setValue('role', value, { shouldValidate: true });
+  };
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
@@ -54,19 +80,15 @@ export default function RegisterPage() {
       await registerUser({
         name: data.name,
         password: data.password,
-        mobile_number: data.phone, 
+        mobile_number: data.phone,
         localization: data.localization,
       });
-
-      // Registration successful - redirect to login
-      // Backend doesn't auto-login, user must login after registration
       router.push('/auth/login');
     } catch (error: any) {
-      // Handle specific error codes
       if (error.response?.status === 409) {
-        setApiError('Este número de telefone já está registrado. Tente fazer login.');
+        setApiError(t('errors.phone_taken'));
       } else {
-        setApiError(error.response?.data?.error || error.message || 'Erro ao criar conta. Tente novamente.');
+        setApiError(error.response?.data?.error || error.message || t('errors.generic'));
       }
     } finally {
       setIsLoading(false);
@@ -74,116 +96,195 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-      <h1 className="text-5xl md:text-6xl font-black mb-2 logo-wamini">
-        Wamini
-      </h1>
-      <p className="text-gray-600 mb-8">Encontre, negocie e receba</p>
+    <div className="min-h-screen flex flex-col md:flex-row">
 
-      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md space-y-4">
-        <div>
-          <input
-            {...register('name')}
-            type="text"
-            placeholder="Seu Nome"
-            className="w-full"
-          />
-          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
-        </div>
-
-        <div>
-          <input
-            {...register('phone')}
-            type="tel"
-            placeholder="Seu Número"
-            className="w-full"
-          />
-          {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
-        </div>
-
-        <div>
-          <select
-            {...register('localization')}
-            className="w-full"
-            defaultValue=""
-          >
-            <option value="" disabled>Distrito</option>
-            {DISTRICTS.map((district) => (
-              <option key={district} value={district}>{district}</option>
-            ))}
-          </select>
-          {errors.localization && <p className="text-red-500 text-sm mt-1">{errors.localization.message}</p>}
-        </div>
-
-        <div>
-          <input
-            {...register('password')}
-            type="password"
-            placeholder="Crie Senha"
-            className="w-full"
-          />
-          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
-        </div>
-
-        <div>
-          <input
-            {...register('confirmPassword')}
-            type="password"
-            placeholder="Confirme a Senha"
-            className="w-full"
-          />
-          {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            {...register('terms')}
-            type="checkbox"
-            id="terms"
-            className="w-5 h-5 rounded border-2 border-black"
-          />
-          <label htmlFor="terms" className="text-sm text-gray-700">
-            Concordo com os termos e condições
-          </label>
-        </div>
-        {errors.terms && <p className="text-red-500 text-sm">{errors.terms.message}</p>}
-
-        {apiError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-            {apiError}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full btn-gradient py-4 text-lg font-bold"
+      {/* ── LEFT / BRAND PANEL ── */}
+      <div className="gradient-wamini flex flex-col items-center justify-center p-10 md:w-5/12 md:min-h-screen">
+        <motion.div
+          initial={{ opacity: 0, x: -32 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col items-center text-center w-full"
         >
-          {isLoading ? 'Criando conta...' : 'Registar'}
-        </button>
-      </form>
-      <p className="mt-6 text-sm">
-        Já tem uma conta?{' '}
-        <Link href="/auth/login" style={{
-          background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          fontWeight: 'bold'
-        }}>
-          Entre!
-        </Link>
-      </p>
+          <h1 className="text-7xl md:text-8xl font-black logo-wamini leading-none mb-3">Wamini</h1>
+          <p className="text-gray-800 font-semibold text-lg max-w-xs text-center mx-auto">
+            {t('landing.tagline')}
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center mt-8">
+            {(Object.keys(ROLE_ICONS) as Array<keyof typeof ROLE_ICONS>).map((key) => (
+              <span key={key} className="bg-black/10 text-gray-900 text-xs font-bold px-4 py-2 rounded-full">
+                {t(`auth.roles.${key}`)}
+              </span>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
-      <p className="mt-4 text-center text-sm text-gray-500">
-        <Link href="/auth/login" className="hover:underline">Recuperar senha</Link>
-      </p>
-      <button
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg gradient-wamini"
-        aria-label="Acessibilidade"
-      >
-        <Accessibility size={24} className="text-black" />
-      </button>
+      {/* ── RIGHT / FORM PANEL ── */}
+      <div className="flex-1 flex items-start justify-center px-6 py-12 bg-white overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="w-full max-w-md"
+        >
+          {/* Language switcher */}
+          <div className="flex justify-end mb-6">
+            <LanguageSwitcher />
+          </div>
+
+          <h2 className="text-3xl font-black text-gray-900 mb-1">{t('auth.register_title')}</h2>
+          <p className="text-gray-500 mb-8 text-sm">{t('auth.register_subtitle')}</p>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+
+            {/* ── Role selector ── */}
+            <div>
+              <p className="text-sm font-bold text-gray-700 mb-2">{t('auth.role_prompt')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {(Object.entries(ROLE_ICONS) as Array<[keyof typeof ROLE_ICONS, typeof ROLE_ICONS[keyof typeof ROLE_ICONS]]>).map(([key, { Icon, color, bg }]) => {
+                  const active = roleValue === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleRoleSelect(key)}
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-bold transition-all duration-200"
+                      style={{
+                        background: active ? bg : '#fff',
+                        borderColor: active ? color : '#E5E7EB',
+                        color: active ? color : '#6B7280',
+                        transform: active ? 'scale(1.04)' : 'scale(1)',
+                      }}
+                    >
+                      <Icon size={24} strokeWidth={1.8} />
+                      {t(`auth.roles.${key}`)}
+                    </button>
+                  );
+                })}
+              </div>
+              <input type="hidden" {...register('role')} />
+              {errors.role && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle size={12} /> {t('auth.role_prompt')}
+                </p>
+              )}
+            </div>
+
+            {/* ── Fields revealed after role selection ── */}
+            <AnimatePresence>
+              {roleValue && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-4 overflow-hidden"
+                >
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.name_label')}</label>
+                    <div className="relative">
+                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input type="text" placeholder={t('auth.name_placeholder')} className="w-full input-icon-left" {...register('name')} />
+                    </div>
+                    {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.name_label')}</p>}
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.phone_label')}</label>
+                    <div className="relative">
+                      <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input type="tel" placeholder={t('auth.phone_placeholder')} className="w-full input-icon-left" {...register('phone')} />
+                    </div>
+                    {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.phone_label')}</p>}
+                  </div>
+
+                  {/* District */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.district_label')}</label>
+                    <div className="relative">
+                      <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <select className="w-full input-icon-left appearance-none" defaultValue="" {...register('localization')}>
+                        <option value="" disabled>{t('auth.district_placeholder')}</option>
+                        {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    {errors.localization && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.district_label')}</p>}
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.password_label')}</label>
+                    <div className="relative">
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input type="password" placeholder={t('auth.password_placeholder')} className="w-full input-icon-left" {...register('password')} />
+                    </div>
+                    {errors.password && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.password_label')}</p>}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.confirm_password_label')}</label>
+                    <div className="relative">
+                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input type="password" placeholder={t('auth.confirm_password_placeholder')} className="w-full input-icon-left" {...register('confirmPassword')} />
+                    </div>
+                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.confirm_password_label')}</p>}
+                  </div>
+
+                  {/* Terms */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      className="mt-1 w-5 h-5 rounded border-2 border-black flex-shrink-0"
+                      {...register('terms')}
+                    />
+                    <label htmlFor="terms" className="text-sm text-gray-700 leading-snug">
+                      {t('auth.terms_label')}
+                    </label>
+                  </div>
+                  {errors.terms && <p className="text-red-500 text-xs flex items-center gap-1"><AlertCircle size={12} />{t('auth.terms_label')}</p>}
+
+                  {/* API Error */}
+                  {apiError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm flex items-center gap-2"
+                    >
+                      <AlertCircle size={16} /> {apiError}
+                    </motion.div>
+                  )}
+
+                  {/* Submit */}
+                  <button type="submit" disabled={isLoading} className="btn-gradient w-full py-4 text-base">
+                    {isLoading ? t('auth.creating') : t('register')}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
+
+          <p className="mt-6 text-sm text-center text-gray-600">
+            {t('auth.have_account')}{' '}
+            <Link
+              href="/auth/login"
+              className="font-black"
+              style={{
+                background: 'linear-gradient(135deg, #D8FF12, #FBB03B)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {t('login')}
+            </Link>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 }
