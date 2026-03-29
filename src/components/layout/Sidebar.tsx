@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Link } from '@/i18n/routing';
 import clsx from 'clsx';
@@ -42,9 +43,9 @@ export default function Sidebar() {
 
   return (
     <>
-      <nav className="hidden md:flex fixed left-0 top-0 h-screen w-48 md:align-center flex-col p-4 z-20 gap-4">
+      <nav className="hidden md:flex fixed left-0 top-0 h-screen w-48 md:align-center flex-col p-4 z-20 gap-4" aria-label="Navegação principal">
         <div className="flex-1 space-y-3 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
             const active = isActive(item.href);
             
             return (
@@ -52,12 +53,19 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className="block group"
+                aria-label={`${item.label}${active ? ' — página atual' : ''}`}
+                aria-current={active ? 'page' : undefined}
               >
-                <div className="w-full h-28 rounded-t-2xl overflow-hidden ">
-                  <img
+                <div className="relative w-full h-28 rounded-t-2xl overflow-hidden">
+                  <Image
                     src={item.image}
-                    alt={item.label}
-                    className="w-full h-full object-cover"
+                    alt=""
+                    aria-hidden="true"
+                    fill
+                    className="object-cover"
+                    sizes="192px"
+                    // Primeira imagem é LCP em desktop — carregar com prioridade
+                    priority={index === 0}
                   />
                 </div>
                 <div
@@ -77,9 +85,9 @@ export default function Sidebar() {
       </nav>
 
       {/* Mobile Sidebar - Horizontal */}
-      <nav className="md:hidden overflow-x-auto">
+      <nav className="md:hidden overflow-x-auto" aria-label="Navegação principal">
         <div className="flex justify-center gap-3 p-3">
-          {navItems.map((item) => {
+          {navItems.map((item, index) => {
             const active = isActive(item.href);
             
             return (
@@ -87,12 +95,18 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className="flex-shrink-0 block group"
+                aria-label={`${item.label}${active ? ' — página atual' : ''}`}
+                aria-current={active ? 'page' : undefined}
               >
-                <div className="w-24 h-20 rounded-t-xl overflow-hidden">
-                  <img
+                <div className="relative w-24 h-20 rounded-t-xl overflow-hidden">
+                  <Image
                     src={item.image}
-                    alt={item.label}
-                    className="w-full h-full object-cover"
+                    alt=""
+                    aria-hidden="true"
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                    priority={index === 0}
                   />
                 </div>
                 <div

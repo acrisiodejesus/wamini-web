@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { motion } from 'framer-motion';
 import { Sprout, Truck, ShoppingBag, Users } from 'lucide-react';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 
 const profileIcons = {
   farmer: Sprout,
@@ -37,10 +38,35 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-white flex flex-col">
 
+      {/* ── TOP NAV ── */}
+      <nav
+        className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100 px-6 py-3 flex items-center justify-between"
+        aria-label="Navegação da página inicial"
+      >
+        <span className="text-xl font-black logo-wamini" aria-label="Wamini">Wamini</span>
+        <div className="flex items-center gap-3" role="toolbar" aria-label="Opções de idioma e acesso">
+          <LanguageSwitcher />
+          <Link
+            href="/auth/login"
+            className="text-sm font-bold text-gray-700 hover:text-black transition-colors px-3 py-1.5"
+            aria-label="Entrar na conta"
+          >
+            {t('login')}
+          </Link>
+          <Link
+            href="/auth/register"
+            className="btn-gradient text-sm py-2 px-4 rounded-full font-black"
+            aria-label="Criar conta gratuita"
+          >
+            {t('register')}
+          </Link>
+        </div>
+      </nav>
+
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden gradient-wamini flex flex-col items-center justify-center text-center px-6 py-24 md:py-36">
-        <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-black opacity-5 blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden gradient-wamini flex flex-col items-center justify-center text-center px-6 py-24 md:py-36" aria-label="Bem-vindo ao Wamini">
+        <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl pointer-events-none" aria-hidden="true" />
+        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-black opacity-5 blur-3xl pointer-events-none" aria-hidden="true" />
 
         <motion.h1
           initial={{ opacity: 0, y: -24 }}
@@ -66,10 +92,10 @@ export default function HomePage() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-4"
         >
-          <Link href="/auth/register" className="btn-gradient text-base py-4 px-8 inline-block text-center rounded-3xl font-black text-lg shadow-md">
+          <Link href="/auth/register" className="btn-gradient text-base py-4 px-8 inline-block text-center rounded-3xl font-black text-lg shadow-md" aria-label="Criar conta gratuita no Wamini">
             {t('landing.cta_start')}
           </Link>
-          <Link href="/auth/login" className="btn-outline text-base py-4 px-8 inline-block text-center rounded-3xl font-black text-lg">
+          <Link href="/auth/login" className="btn-outline text-base py-4 px-8 inline-block text-center rounded-3xl font-black text-lg" aria-label="Entrar na minha conta Wamini">
             {t('login')}
           </Link>
         </motion.div>
@@ -131,7 +157,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TRUST BANNER ── */}
-      <section className="bg-gray-950 text-white px-6 py-16 text-center">
+      <section className="bg-gray-950 text-white px-6 py-16 text-center" aria-label="Por que escolher o Wamini">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -156,6 +182,7 @@ export default function HomePage() {
           <Link
             href="/auth/register"
             className="btn-gradient mt-8 inline-block py-4 px-10 rounded-3xl text-lg font-black"
+            aria-label="Registar-se gratuitamente no Wamini"
           >
             {t('landing.cta_register')}
           </Link>
@@ -163,8 +190,8 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-white border-t border-gray-100 px-6 py-8 text-center text-sm text-gray-400">
-        <p className="font-black logo-wamini text-2xl text-gray-700 mb-1">Wamini</p>
+      <footer className="bg-white border-t border-gray-100 px-6 py-8 text-center text-sm text-gray-400" role="contentinfo" aria-label="Rodapé da página">
+        <p className="font-black logo-wamini text-2xl text-gray-700 mb-1" aria-hidden="true">Wamini</p>
         <p>© 2024 Wamini — Nampula, Moçambique</p>
       </footer>
     </main>

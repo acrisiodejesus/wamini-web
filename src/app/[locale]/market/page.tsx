@@ -1,35 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import MarketFilters from '@/components/features/MarketFilters';
 import ProductCard from '@/components/features/ProductCard';
-import AdvertiseModal from '@/components/features/AdvertiseModal';
 import Sidebar from '@/components/layout/Sidebar';
-import MobileNav from '@/components/layout/MobileNav';
-import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import { Product } from '@/types';
 import { Product as ApiProduct } from '@/lib/api/types';
-import { Settings, Loader2 } from 'lucide-react';
-import { Link } from '@/i18n/routing';
+import { Loader2 } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useTranslations } from 'next-intl';
+
+// Lazy load: o modal só é descarregado do servidor quando aberto pela 1ª vez
+const AdvertiseModal = dynamic(
+  () => import('@/components/features/AdvertiseModal'),
+  { ssr: false }
+);
 
 // Adapter function to convert API Product to UI Product
 function adaptApiProduct(apiProduct: ApiProduct): Product {
   return {
     id: apiProduct.id.toString(),
     name: apiProduct.name,
-    category: 'General', // Default category since backend doesn't provide it
+    category: 'General',
     price: apiProduct.price,
-    unit: 'kg', // Default unit since backend doesn't provide it
+    unit: 'kg',
     quantity: apiProduct.quantity || 0,
-    location: '', // Backend doesn't provide location
+    location: '',
     seller: {
       id: apiProduct.user_id.toString(),
-      name: 'Seller', // Backend doesn't return user info in product list
+      name: 'Seller',
     },
     image: apiProduct.photo || '/placeholder-product.jpg',
-    description: '', // Backend doesn't provide description
+    description: '',
   };
 }
 
@@ -39,7 +42,14 @@ export default function MarketPage() {
   const [isAdvertiseModalOpen, setIsAdvertiseModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch products from API
+  // Debounce: evita chamar a API a cada tecla — aguarda 400ms de pausa
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearch = useCallback((query: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchQuery(query), 400);
+  }, []);
+
+  // Fetch products from API (com cache React Query)
   const { products, isLoading, error } = useProducts(
     activeCategory !== 'Tudo' ? { category: activeCategory, search: searchQuery } : { search: searchQuery },
     { page: 1, per_page: 20 }
@@ -50,26 +60,23 @@ export default function MarketPage() {
       <Sidebar />
       
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
-
-          
-        
         <main className="p-4 md:p-8">
           <MarketFilters 
-            onSearch={setSearchQuery} 
+            onSearch={handleSearch}
             onCategoryChange={setActiveCategory}
             activeCategory={activeCategory}
             onAdvertiseClick={() => setIsAdvertiseModalOpen(true)}
           />
 
           {isLoading && (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 size={48} className="animate-spin text-yellow-500" />
+            <div className="flex justify-center items-center py-12" aria-live="polite" aria-label="A carregar produtos">
+              <Loader2 size={48} className="animate-spin text-yellow-500" aria-hidden="true" />
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700  px-6 py-4 rounded-lg mt-6">
-              <p className="font-semibold">Error loading products</p>
+            <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mt-6" role="alert">
+              <p className="font-semibold">Erro ao carregar produtos</p>
               <p className="text-sm">{error}</p>
             </div>
           )}
@@ -92,10 +99,12 @@ export default function MarketPage() {
         </main>
       </div>
 
-      <AdvertiseModal 
-        isOpen={isAdvertiseModalOpen} 
-        onClose={() => setIsAdvertiseModalOpen(false)} 
-      />
+      {isAdvertiseModalOpen && (
+        <AdvertiseModal 
+          isOpen={isAdvertiseModalOpen} 
+          onClose={() => setIsAdvertiseModalOpen(false)} 
+        />
+      )}
     </>
   );
 }

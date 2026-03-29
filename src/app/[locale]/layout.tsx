@@ -2,8 +2,18 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { Inter } from 'next/font/google';
 import AccessibilityPanel from '@/components/accessibility/AccessibilityPanel';
+import Providers from './providers';
 import '../globals.css';
+
+// Carrega Inter de forma self-hosted via next/font — elimina dependência de CDN
+// e activa font-display:swap automaticamente
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({locale}));
@@ -28,11 +38,13 @@ export default async function LocaleLayout({
   const messages = await getMessages();
  
   return (
-    <html lang={locale}>
-      <body className="min-h-screen bg-background text-foreground">
+    <html lang={locale} className={inter.variable}>
+      <body className="min-h-screen bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages}>
-          {children}
-          <AccessibilityPanel />
+          <Providers>
+            {children}
+            <AccessibilityPanel />
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

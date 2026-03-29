@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { productsService } from '@/lib/api/services/products';
 import type { Product } from '@/lib/api/types';
 
@@ -9,45 +9,29 @@ interface UseProductsReturn {
   total: number;
   isLoading: boolean;
   error: string | null;
-  refetch: () => Promise<void>;
+  refetch: () => void;
 }
 
 export function useProducts(
   filters?: { category?: string; search?: string },
   pagination?: { page?: number; per_page?: number }
 ): UseProductsReturn {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await productsService.getProducts();
-      setProducts(data);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch products';
-      setError(errorMessage);
-      console.error('Failed to fetch products:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const { data, isLoading, error, refetch } = useQuery({
+    // A query key inclui os filtros — React Query re-busca automaticamente
+    // quando a categoria ou pesquisa mudam, e usa cache quando são iguais
+    queryKey: ['products', filters?.category, filters?.search, pagination?.page, pagination?.per_page],
+    queryFn: () => productsService.getProducts(),
+    // Dados considerados "frescos" durante 60 segundos
+    staleTime: 60 * 1000,
+    // Manter dados anteriores enquanto carrega novos (evita flash de loading)
+    placeholderData: (prev) => prev,
+  });
 
   return {
-    products,
-    total: products.length,
+    products: data ?? [],
+    total: data?.length ?? 0,
     isLoading,
-    error,
-    refetch: fetchProducts,
+    error: error ? (error as any).response?.data?.message ?? error.message : null,
+    refetch,
   };
 }
-
-// Note: Backend doesn't support fetching single product by ID
-// If needed, filter from the products array instead
-

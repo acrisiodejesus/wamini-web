@@ -9,7 +9,8 @@
 }
 
 @theme inline {
-  --font-family-sans: 'Inter', system-ui, sans-serif;
+  /* Inter é carregada via next/font — usa a variável CSS injectada no <html> */
+  --font-family-sans: var(--font-inter, 'Inter', system-ui, sans-serif);
 
   /* Wamini Brand Colors */
   --color-wamini-yellow: #D8FF12;

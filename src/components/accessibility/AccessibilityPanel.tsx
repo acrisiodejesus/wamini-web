@@ -109,7 +109,6 @@ export default function AccessibilityPanel() {
   }, []);
 
   // ── Screen Reader ────────────────────────────────────────────────────────
-  // FIX: usar delegação de eventos no document em vez de querySelectorAll estático
   useEffect(() => {
     if (!isScreenReaderActive) return;
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -126,40 +125,96 @@ export default function AccessibilityPanel() {
       window.speechSynthesis.speak(utterance);
     };
 
-    const handleFocus = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
+    // Extrai o texto mais descritivo de qualquer elemento
+    const getElementText = (target: HTMLElement): string => {
+      // 1. aria-label explícito tem prioridade máxima
+      const ariaLabel = target.getAttribute('aria-label');
+      if (ariaLabel) return ariaLabel;
 
-      let text =
-        target.getAttribute('aria-label') ||
-        target.getAttribute('aria-labelledby')
-          ? document.getElementById(target.getAttribute('aria-labelledby') || '')?.textContent || ''
-          : '';
-
-      if (!text) {
-        // Tentar label associada via htmlFor
-        if (target.id) {
-          const label = document.querySelector(`label[for="${target.id}"]`);
-          if (label) text = label.textContent || '';
-        }
+      // 2. aria-labelledby referencia outro elemento pelo id
+      const labelledBy = target.getAttribute('aria-labelledby');
+      if (labelledBy) {
+        const labelEl = document.getElementById(labelledBy);
+        if (labelEl?.textContent) return labelEl.textContent;
       }
 
-      if (!text) {
-        text =
-          (target instanceof HTMLInputElement && target.placeholder) ||
-          (target instanceof HTMLSelectElement && target.options[target.selectedIndex]?.text) ||
-          target.textContent ||
-          '';
+      // 3. <label> associada via htmlFor
+      if (target.id) {
+        const label = document.querySelector(`label[for="${target.id}"]`);
+        if (label?.textContent) return label.textContent;
       }
 
-      speakText(String(text));
+      // 4. Placeholder para inputs
+      if (target instanceof HTMLInputElement && target.placeholder)
+        return target.placeholder;
+
+      // 5. Select: opção activa
+      if (target instanceof HTMLSelectElement)
+        return target.options[target.selectedIndex]?.text || '';
+
+      // 6. alt de imagens
+      if (target instanceof HTMLImageElement && target.alt)
+        return target.alt;
+
+      // 7. Texto visível do elemento
+      // Ignora filhos que são eles próprios lidos separadamente (botões, links)
+      const clone = target.cloneNode(true) as HTMLElement;
+      // Remove elementos interactivos para não duplicar leitura
+      clone.querySelectorAll('button, a, input, select, textarea').forEach(el => el.remove());
+      const text = clone.textContent || '';
+      return text;
     };
 
-    // Delegação no document — capta todos os elementos incluindo os dinâmicos
+    // Verifica se o elemento (ou algum ancestral) está marcado como aria-hidden
+    const isAriaHidden = (el: HTMLElement): boolean => {
+      let node: HTMLElement | null = el;
+      while (node) {
+        if (node.getAttribute('aria-hidden') === 'true') return true;
+        node = node.parentElement;
+      }
+      return false;
+    };
+
+    // Verifica se o elemento é relevante para leitura
+    // Lê: headings, parágrafos, spans, links, botões, inputs, imagens com alt, etc.
+    // Não lê: elementos puramente de layout (div/section sem texto próprio)
+    const isReadable = (target: HTMLElement): boolean => {
+      if (isAriaHidden(target)) return false;
+      const role = target.getAttribute('role');
+      if (role === 'presentation' || role === 'none') return false;
+      return true;
+    };
+
+    // ── focusin: navegação por teclado (Tab, Shift+Tab) ──────────────────────
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target || !isReadable(target)) return;
+      const text = getElementText(target);
+      if (text.trim()) speakText(text);
+    };
+
+    // ── click: clique com rato em qualquer elemento ───────────────────────────
+    // Percorre a árvore de ancestrais para encontrar o elemento mais descritivo
+    const handleClick = (e: MouseEvent) => {
+      let target = e.target as HTMLElement | null;
+      while (target && target !== document.body) {
+        if (!isAriaHidden(target)) {
+          const text = getElementText(target);
+          if (text.trim()) {
+            speakText(text);
+            return;
+          }
+        }
+        target = target.parentElement;
+      }
+    };
+
     document.addEventListener('focusin', handleFocus);
+    document.addEventListener('click', handleClick);
 
     return () => {
       document.removeEventListener('focusin', handleFocus);
+      document.removeEventListener('click', handleClick);
       window.speechSynthesis.cancel();
     };
   }, [isScreenReaderActive]);

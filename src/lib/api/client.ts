@@ -102,9 +102,6 @@ async function refreshToken(): Promise<string | null> {
       }
     );
 
-    console.log('Refresh Token API Response:', response.data);
-
-    // Handle direct response
     const newToken = response.data?.token || response.data?.access_token;
     if (newToken) {
       setToken(newToken);
