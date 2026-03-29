@@ -2,7 +2,7 @@
 
 [![Framework](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
-[![Live Demo](https://img.shields.io/badge/Live_Platform-Click_Here-0052cc?style=for-the-badge)](https://wamini.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live_Platform-Click_Here-0052cc?style=for-the-badge)](https://wamini.co.mz)
 
 > A scalable, high-performance web marketplace engineered to bridge the gap between local agricultural producers and direct buyers, streamlining the food supply chain.
 
