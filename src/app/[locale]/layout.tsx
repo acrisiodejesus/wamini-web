@@ -5,6 +5,7 @@ import { routing } from '@/i18n/routing';
 import { Inter } from 'next/font/google';
 import AccessibilityPanel from '@/components/accessibility/AccessibilityPanel';
 import Providers from './providers';
+import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 import '../globals.css';
 
 // Carrega Inter de forma self-hosted via next/font — elimina dependência de CDN
@@ -44,6 +45,7 @@ export default async function LocaleLayout({
           <Providers>
             {children}
             <AccessibilityPanel />
+            <ServiceWorkerRegister />
           </Providers>
         </NextIntlClientProvider>
       </body>
