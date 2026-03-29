@@ -1,35 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Type, Eye, Volume2, Mic, X, MicOff } from 'lucide-react';
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-type SpeechResultEvent = Event & {
-  results: SpeechRecognitionResultList;
-};
-
-type SpeechRecognitionConstructor = new () => {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onstart: (() => void) | null;
-  onresult: ((event: SpeechResultEvent) => void) | null;
-  onerror: ((event: Event & { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-type SpeechRecognitionInstance = InstanceType<SpeechRecognitionConstructor>;
-
-// Extender window para SpeechRecognition
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  }
-}
+import { useVoice } from '@/contexts/VoiceContext';
+import { useVoiceCommand } from '@/hooks/useVoiceCommand';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const FONT_MIN = 12;
@@ -69,10 +43,8 @@ export default function AccessibilityPanel() {
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState(FONT_DEFAULT);
   const [isScreenReaderActive, setIsScreenReaderActive] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState('');
-
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  
+  const { isListening, voiceStatus, toggleListening } = useVoice();
 
   // ── Restore persisted settings on mount ──────────────────────────────────
   useEffect(() => {
@@ -94,7 +66,6 @@ export default function AccessibilityPanel() {
   }, []);
 
   // ── Font Size ────────────────────────────────────────────────────────────
-  // FIX: usar o valor do callback (prev) — não a closure stale
   const changeFont = useCallback((delta: number) => {
     setFontSize((prev) => {
       const next = Math.min(FONT_MAX, Math.max(FONT_MIN, prev + delta));
@@ -125,47 +96,35 @@ export default function AccessibilityPanel() {
       window.speechSynthesis.speak(utterance);
     };
 
-    // Extrai o texto mais descritivo de qualquer elemento
     const getElementText = (target: HTMLElement): string => {
-      // 1. aria-label explícito tem prioridade máxima
       const ariaLabel = target.getAttribute('aria-label');
       if (ariaLabel) return ariaLabel;
 
-      // 2. aria-labelledby referencia outro elemento pelo id
       const labelledBy = target.getAttribute('aria-labelledby');
       if (labelledBy) {
         const labelEl = document.getElementById(labelledBy);
         if (labelEl?.textContent) return labelEl.textContent;
       }
 
-      // 3. <label> associada via htmlFor
       if (target.id) {
         const label = document.querySelector(`label[for="${target.id}"]`);
         if (label?.textContent) return label.textContent;
       }
 
-      // 4. Placeholder para inputs
       if (target instanceof HTMLInputElement && target.placeholder)
         return target.placeholder;
 
-      // 5. Select: opção activa
       if (target instanceof HTMLSelectElement)
         return target.options[target.selectedIndex]?.text || '';
 
-      // 6. alt de imagens
       if (target instanceof HTMLImageElement && target.alt)
         return target.alt;
 
-      // 7. Texto visível do elemento
-      // Ignora filhos que são eles próprios lidos separadamente (botões, links)
       const clone = target.cloneNode(true) as HTMLElement;
-      // Remove elementos interactivos para não duplicar leitura
       clone.querySelectorAll('button, a, input, select, textarea').forEach(el => el.remove());
-      const text = clone.textContent || '';
-      return text;
+      return clone.textContent || '';
     };
 
-    // Verifica se o elemento (ou algum ancestral) está marcado como aria-hidden
     const isAriaHidden = (el: HTMLElement): boolean => {
       let node: HTMLElement | null = el;
       while (node) {
@@ -175,9 +134,6 @@ export default function AccessibilityPanel() {
       return false;
     };
 
-    // Verifica se o elemento é relevante para leitura
-    // Lê: headings, parágrafos, spans, links, botões, inputs, imagens com alt, etc.
-    // Não lê: elementos puramente de layout (div/section sem texto próprio)
     const isReadable = (target: HTMLElement): boolean => {
       if (isAriaHidden(target)) return false;
       const role = target.getAttribute('role');
@@ -185,7 +141,6 @@ export default function AccessibilityPanel() {
       return true;
     };
 
-    // ── focusin: navegação por teclado (Tab, Shift+Tab) ──────────────────────
     const handleFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
       if (!target || !isReadable(target)) return;
@@ -193,8 +148,6 @@ export default function AccessibilityPanel() {
       if (text.trim()) speakText(text);
     };
 
-    // ── click: clique com rato em qualquer elemento ───────────────────────────
-    // Percorre a árvore de ancestrais para encontrar o elemento mais descritivo
     const handleClick = (e: MouseEvent) => {
       let target = e.target as HTMLElement | null;
       while (target && target !== document.body) {
@@ -220,7 +173,6 @@ export default function AccessibilityPanel() {
   }, [isScreenReaderActive]);
 
   const toggleScreenReader = useCallback(() => {
-    // FIX: usar callback para ler o estado mais recente, não a closure stale
     setIsScreenReaderActive((prev) => {
       const next = !prev;
       if (!next && typeof window !== 'undefined' && window.speechSynthesis) {
@@ -230,72 +182,32 @@ export default function AccessibilityPanel() {
     });
   }, []);
 
-  // ── Voice Commands (SpeechRecognition) ─────────────────────────────────
-  // FIX: implementação real com Web Speech Recognition API
-  const startListening = useCallback(() => {
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionAPI) {
-      setVoiceStatus('Comando de voz não suportado neste browser.');
-      return;
-    }
-
-    const recognition = new SpeechRecognitionAPI();
-    recognition.lang = 'pt-PT';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognitionRef.current = recognition;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setVoiceStatus('A ouvir…');
-    };
-
-    recognition.onresult = (event: SpeechResultEvent) => {
-      const transcript = event.results[0][0].transcript.toLowerCase().trim();
-      setVoiceStatus(`"${transcript}"`);
-      handleVoiceCommand(transcript);
-    };
-
-    recognition.onerror = (event: Event & { error: string }) => {
-      setVoiceStatus(`Erro: ${event.error}`);
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  }, []);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-    setVoiceStatus('');
-  }, []);
-
-  const toggleListening = useCallback(() => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  }, [isListening, startListening, stopListening]);
-
-  // Comandos de voz reconhecidos
-  const handleVoiceCommand = (transcript: string) => {
-    if (transcript.includes('contraste')) {
-      toggleHighContrast();
-    } else if (transcript.includes('fonte maior') || transcript.includes('aumentar fonte')) {
-      changeFont(FONT_STEP);
-    } else if (transcript.includes('fonte menor') || transcript.includes('diminuir fonte')) {
-      changeFont(-FONT_STEP);
-    } else if (transcript.includes('leitor')) {
-      setIsScreenReaderActive((prev) => !prev);
-    } else if (transcript.includes('fechar')) {
-      setIsOpen(false);
-    }
-  };
+  // ── Voice Commands (SpeechRecognition) Registados ────────────────────────
+  useVoiceCommand({
+    pattern: /contraste/i,
+    action: () => toggleHighContrast(),
+    description: 'Alternar alto contraste',
+  });
+  useVoiceCommand({
+    pattern: /fonte maior|aumentar fonte/i,
+    action: () => changeFont(FONT_STEP),
+    description: 'Aumentar a fonte',
+  });
+  useVoiceCommand({
+    pattern: /fonte menor|diminuir fonte/i,
+    action: () => changeFont(-FONT_STEP),
+    description: 'Diminuir a fonte',
+  });
+  useVoiceCommand({
+    pattern: /leitor de ecrã|leitor/i,
+    action: () => toggleScreenReader(),
+    description: 'Alternar leitor de ecrã',
+  });
+  useVoiceCommand({
+    pattern: /fechar painel|fechar/i,
+    action: () => setIsOpen(false),
+    description: 'Fechar Acessibilidade',
+  });
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -423,7 +335,7 @@ export default function AccessibilityPanel() {
                     : <Mic size={20} className="text-gray-600" />
                   }
                 </div>
-                Comando de Voz
+                Comando
               </span>
               <button
                 onClick={toggleListening}
@@ -440,15 +352,16 @@ export default function AccessibilityPanel() {
 
             {/* Voice feedback */}
             {voiceStatus && (
-              <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+              <p className="text-xs text-center text-gray-500 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100 animate-pulse">
                 {voiceStatus}
               </p>
             )}
 
             {/* Voice commands hint */}
             {isListening && (
-              <div className="text-xs text-gray-400 space-y-0.5 px-1">
-                <p>Diga: <strong className="text-gray-600">"contraste"</strong>, <strong className="text-gray-600">"fonte maior"</strong>, <strong className="text-gray-600">"fonte menor"</strong>, <strong className="text-gray-600">"leitor"</strong>, <strong className="text-gray-600">"fechar"</strong></p>
+              <div className="text-xs text-gray-400 space-y-0.5 px-1 pt-1">
+                <p>Navegue dizendo: <strong className="text-gray-600">"ir para mercado"</strong>, <strong className="text-gray-600">"definições"</strong>, <strong className="text-gray-600">"meu perfil"</strong>...</p>
+                <p>Ou comandos locais: <strong className="text-gray-600">"contraste"</strong>, <strong className="text-gray-600">"fonte maior"</strong>...</p>
               </div>
             )}
           </div>
@@ -456,7 +369,7 @@ export default function AccessibilityPanel() {
           {/* Divider + screen reader note */}
           {isScreenReaderActive && (
             <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 border border-green-100">
-              ✓ Leitor activo — foque em qualquer elemento para ouvir.
+              ✓ Leitor activo — foque num elemento para ouvir.
             </p>
           )}
         </div>

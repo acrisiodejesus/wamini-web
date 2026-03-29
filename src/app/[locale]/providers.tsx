@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
+import { VoiceProvider } from '@/contexts/VoiceContext';
 
 export default function Providers({ children }: { children: ReactNode }) {
   // useState garante que cada request tem o seu próprio QueryClient no SSR
@@ -24,7 +25,9 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <VoiceProvider>
+        {children}
+      </VoiceProvider>
     </QueryClientProvider>
   );
 }

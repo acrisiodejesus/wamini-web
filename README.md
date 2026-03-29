@@ -1,42 +1,54 @@
 # 🌾 Wamini: AgriTech Marketplace Platform
 
-[![Framework](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)]()
+[![Framework](https://img.shields.io/badge/Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
+[![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)]()
+[![E2E Testing](https://img.shields.io/badge/Tested_with-Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)]()
 [![Live Demo](https://img.shields.io/badge/Live_Platform-Click_Here-0052cc?style=for-the-badge)](https://wamini.co.mz)
 
-> A scalable, high-performance web marketplace engineered to bridge the gap between local agricultural producers and direct buyers, streamlining the food supply chain.
+> A scalable, high-performance web marketplace engineered to bridge the gap between local agricultural producers and direct buyers, streamlining the food supply chain with a strong focus on accessibility and offline capabilities.
 
 ## 🎯 The Business Case
 
 The traditional agricultural supply chain is heavily fragmented, relying on multiple middlemen that reduce farmer profits and increase prices for end buyers. 
 
-**Wamini** was built to solve this critical market inefficiency. It serves as a direct digital bridge, allowing farmers to list their produce and buyers to source agricultural products seamlessly. This platform demonstrates my capability to build complex, multi-sided marketplaces with distinct user roles and robust data flows.
+**Wamini** was built to solve this critical market inefficiency in Mozambique and beyond. It serves as a direct digital bridge, allowing farmers to list their produce and buyers to source agricultural products seamlessly. This platform demonstrates the capability to build complex, multi-sided marketplaces with distinct user roles, robust data flows, and strict accessibility standards to ensure digital inclusion for everyone, regardless of their technical literacy.
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
 
-Building a multi-sided marketplace requires a robust frontend that can handle dynamic data caching, SEO optimization, and strict type safety. 
+Building a multi-sided marketplace requires a robust frontend that can handle dynamic data caching, SEO optimization, and strict type safety, especially when targeting users in areas with unstable internet infrastructure.
 
-* **Frontend Framework:** Next.js (App Router) - Selected for its Server-Side Rendering (SSR) capabilities, ensuring high performance and SEO compliance for product listings.
-* **Language:** TypeScript - Enforcing strict data models across the platform to prevent runtime errors during product transactions.
-* **Styling:** CSS / Tailored UI - Designed with a mobile-first approach, acknowledging that many farmers and buyers will access the platform via mobile devices in the field.
-* **Deployment:** Vercel - Configured for rapid CI/CD deployment and global edge caching.
+* **Core Framework:** Next.js 15 (App Router) & React 19
+* **Language:** TypeScript 
+* **State Management:** Zustand (Global State) + React Query (Server State & Caching)
+* **Styling & Animation:** Tailwind CSS + Framer Motion
+* **Forms & Validation:** React Hook Form + Zod
+* **Progressive Web App (PWA):** Serwist (Offline support & caching strategies)
+* **Internationalization:** `next-intl` (Supporting Portuguese and local dialects like Emakua)
+* **Testing:** Playwright (End-to-End Testing)
 
 ---
 
 ## ⚙️ Core Engineering Highlights
 
-### 1. Multi-Role Architecture
-A marketplace requires strict separation of concerns between producers (farmers) and consumers (buyers). The platform's logic is structured to handle dynamic routing and state management based on the active user's role.
+### 1. Progressive Web App (PWA) & Offline-First
+Rural farmers often face unstable internet connections. Wamini is fully configured as a PWA, utilizing robust Service Workers (`@serwist/next`) to cache critical assets, handle offline fallbacks, and allow users to install the marketplace directly on their mobile home screens.
 
-### 2. High-Performance Product Listings
-By leveraging Next.js server components, the platform fetches and renders agricultural product listings at edge-speed, preventing layout shifts and ensuring a seamless browsing experience even on slower 3G/4G networks.
+### 2. Deep Accessibility & Voice Commands
+Acknowledging the low digital literacy in certain target demographics, the platform includes a custom **Accessibility Panel**. It supports:
+- Web Speech Recognition API for voice command navigation.
+- High-contrast modes and text resizing.
+- Dual-event listeners (focus/click) ensuring full screen-reader compliance for visually impaired users.
 
-### 3. Type-Safe Commerce Models
-Utilizing strict TypeScript interfaces, the data structures for products (e.g., pricing, weight units, harvest dates, and farmer profiles) are securely managed across the application state.
+### 3. Native Internationalization (i18n)
+Built-in support for multiple languages including Portuguese (pt-PT) and local dialects like **Emakua**. This ensures the platform is truly localized and usable by farmers in their native tongues.
 
+### 4. High-Performance & Automated E2E Testing
+Leveraging Next.js server components and React Query edge-caching to fetch listings instantly. The critical user flows (like product browsing and authentication) are guarded by **Playwright E2E tests**, ensuring zero-regression deployments.
 
+---
 
 ## 🤝 Need a Custom Marketplace or AgriTech Solution?
 
