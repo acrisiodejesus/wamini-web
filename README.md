@@ -56,6 +56,6 @@ Are you looking to build a scalable, multi-sided platform that connects distinct
 
 Let's discuss your project architecture.
 
-[![Upwork](https://img.shields.io/badge/Hire_me_on-Upwork-14A800?style=for-the-badge&logo=upwork&logoColor=white)]([TEU_LINK_UPWORK])
-[![Fiverr](https://img.shields.io/badge/Hire_me_on-Fiverr-00b22d?style=for-the-badge&logo=fiverr&logoColor=white)]([TEU_LINK_FIVERR])
+[![Upwork](https://img.shields.io/badge/Hire_me_on-Upwork-14A800?style=for-the-badge&logo=upwork&logoColor=white)](https://www.upwork.com/freelancers/~010ae73f246a0cf746)
+[![Fiverr](https://img.shields.io/badge/Hire_me_on-Fiverr-00b22d?style=for-the-badge&logo=fiverr&logoColor=white)](https://www.fiverr.com/sellers/acrisio45)
 [![LinkedIn](https://img.shields.io/badge/Connect_on-LinkedIn-0A66C2?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/acrisiodejesus)
