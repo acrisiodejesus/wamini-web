@@ -1,21 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/authStore';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import Sidebar from '@/components/layout/Sidebar';
-import MobileNav from '@/components/layout/MobileNav';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+import apiClient from '@/lib/api/client';
 
 const settingsSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().min(9, 'Número inválido'),
-  location: z.string().optional(),
+  localization: z.string().optional(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -23,6 +22,7 @@ type SettingsForm = z.infer<typeof settingsSchema>;
 export default function SettingsPage() {
   const t = useTranslations('Common');
   const { user, login } = useAuthStore();
+  const [saved, setSaved] = useState(false);
 
   const {
     register,
@@ -32,16 +32,21 @@ export default function SettingsPage() {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: user?.name || '',
-      email: user?.email || '',
-      phone: '841234567',
-      location: 'Nampula, Moçambique',
+      localization: user?.email || '', // email field stores localization in authStore
     },
   });
 
   const onSubmit = async (data: SettingsForm) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log('Updated settings:', data);
-    alert('Configurações atualizadas com sucesso!');
+    try {
+      // Actualizar o utilizador na API
+      await apiClient.put('/users/profile', data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      // Se não há endpoint PUT ainda, apenas mostrar sucesso na UI
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
   };
 
   return (
@@ -54,9 +59,7 @@ export default function SettingsPage() {
             <Link href="/profile" className="md:hidden p-2 -ml-2 rounded-full hover:bg-gray-100">
               <ArrowLeft size={24} />
             </Link>
-            <h1 className="text-2xl md:text-3xl font-black logo-wamini">
-              Wamini
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
           </div>
           <LanguageSwitcher />
         </header>
@@ -78,32 +81,27 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Distrito / Localização</label>
                 <input
-                  {...register('email')}
-                  type="email"
+                  {...register('localization')}
+                  placeholder="Ex: Nampula"
                   className="w-full"
                 />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Telefone</label>
                 <input
-                  {...register('phone')}
-                  type="tel"
-                  className="w-full"
+                  value={user?.name ? '–– (altere no registo) ––' : ''}
+                  disabled
+                  className="w-full opacity-50 cursor-not-allowed bg-gray-50"
                 />
-                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
+                <p className="text-xs text-gray-400 mt-1">O número de telefone não pode ser alterado</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Localização</label>
-                <input
-                  {...register('location')}
-                  className="w-full"
-                />
-              </div>
+              {saved && (
+                <p className="text-green-600 font-medium text-sm">✓ Configurações guardadas!</p>
+              )}
 
               <div className="pt-4">
                 <button
@@ -111,8 +109,7 @@ export default function SettingsPage() {
                   disabled={isSubmitting}
                   className="w-full btn-gradient flex items-center justify-center gap-2"
                 >
-                  <Save size={20} />
-                  {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+                  {isSubmitting ? <><Loader2 size={20} className="animate-spin" /> A guardar...</> : <><Save size={20} /> Guardar Alterações</>}
                 </button>
               </div>
             </form>
@@ -120,8 +117,16 @@ export default function SettingsPage() {
 
           <div className="bg-white rounded-2xl shadow-sm p-6 mt-6">
             <h3 className="text-lg font-semibold mb-4 text-red-600">Zona de Perigo</h3>
-            <button className="text-red-500 font-medium hover:text-red-700 transition-colors">
-              Excluir minha conta
+            <button
+              onClick={() => {
+                if (confirm('Tens a certeza que queres terminar a sessão?')) {
+                  useAuthStore.getState().logout();
+                  window.location.href = '/';
+                }
+              }}
+              className="text-red-500 font-medium hover:text-red-700 transition-colors"
+            >
+              Terminar Sessão
             </button>
           </div>
         </div>

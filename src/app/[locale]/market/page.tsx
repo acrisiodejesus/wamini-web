@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import MarketFilters from '@/components/features/MarketFilters';
 import ProductCard from '@/components/features/ProductCard';
 import Sidebar from '@/components/layout/Sidebar';
@@ -10,31 +9,28 @@ import { Product as ApiProduct } from '@/lib/api/types';
 import { Loader2 } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useTranslations } from 'next-intl';
-
-// Lazy load: o modal só é descarregado do servidor quando aberto pela 1ª vez
-const AdvertiseModal = dynamic(
-  () => import('@/components/features/AdvertiseModal'),
-  { ssr: false }
-);
+import AdvertiseModal from '@/components/features/AdvertiseModal';
 
 // Adapter function to convert API Product to UI Product
-function adaptApiProduct(apiProduct: ApiProduct): Product {
+function adaptApiProduct(apiProduct: ApiProduct & { seller_name?: string; category?: string; location?: string }): Product {
   return {
     id: apiProduct.id.toString(),
     name: apiProduct.name,
-    category: 'General',
+    category: (apiProduct as any).category || 'PRODUTOS',
     price: apiProduct.price,
     unit: 'kg',
     quantity: apiProduct.quantity || 0,
-    location: '',
+    location: (apiProduct as any).location || '',
     seller: {
       id: apiProduct.user_id.toString(),
-      name: 'Seller',
+      name: (apiProduct as any).seller_name || 'Vendedor',
     },
-    image: apiProduct.photo || '/placeholder-product.jpg',
+    image: apiProduct.photo || '',
     description: '',
   };
 }
+
+export const dynamic = 'force-dynamic';
 
 export default function MarketPage() {
   const t = useTranslations('common');
@@ -85,7 +81,11 @@ export default function MarketPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {products.map(product => (
-                  <ProductCard key={product.id} product={adaptApiProduct(product)} />
+                  <ProductCard
+                    key={product.id}
+                    product={adaptApiProduct(product)}
+                    apiProductId={product.id}
+                  />
                 ))}
               </div>
 

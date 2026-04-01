@@ -1,138 +1,389 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Send, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
-import MobileNav from '@/components/layout/MobileNav';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import { Link } from '@/i18n/routing';
 import { Settings } from 'lucide-react';
 import clsx from 'clsx';
+import apiClient from '@/lib/api/client';
+import { useAuth } from '@/hooks/useAuth';
 
-const CATEGORIES = ['TUDO', 'PRODUTOS', 'TRANSPORTE', 'INSUMOS'];
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Negotiation {
+  id: number;
+  other_user_name: string | null;
+  product_name: string | null;
+  input_name: string | null;
+  transport_name: string | null;
+  last_message: string | null;
+  last_timestamp: string;
+  created_at: string;
+}
 
-const CONVERSATIONS = [
-  { id: 1, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-  { id: 2, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-  { id: 3, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-  { id: 4, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-  { id: 5, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-  { id: 6, user: 'Antônio Guerra', lastMessage: 'Bom dia, já despachei o produto!', avatar: 'A', unread: false },
-];
+interface Message {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  body: string;
+  timestamp: string;
+}
 
-const MOCK_PRODUCT = {
-  name: 'Tomate - 50kg - MURIASE',
-  price: '70 mts/kg',
-  image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400',
-  question: 'BOM DIA! Tenho interesse neste produto, ainda esta disponivel?'
-};
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getItemName(neg: Negotiation) {
+  return neg.product_name || neg.input_name || neg.transport_name || 'Negociação';
+}
+
+function getOtherUserInitial(name: string | null) {
+  return (name || '?').charAt(0).toUpperCase();
+}
+
+function formatTime(ts: string) {
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Message Bubble ───────────────────────────────────────────────────────────
+function MessageBubble({ msg, currentUserId }: { msg: Message; currentUserId: number }) {
+  const isMe = msg.sender_id === currentUserId;
+  return (
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={clsx(
+          'max-w-[75%] px-4 py-2.5 rounded-2xl text-sm',
+          isMe
+            ? 'rounded-br-sm text-black'
+            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+        )}
+        style={isMe ? { background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' } : {}}
+      >
+        {!isMe && (
+          <p className="text-xs font-bold mb-1 text-gray-500">{msg.sender_name}</p>
+        )}
+        <p className="leading-relaxed">{msg.body}</p>
+        <p className={clsx('text-xs mt-1', isMe ? 'text-black/50 text-right' : 'text-gray-400 text-right')}>
+          {formatTime(msg.timestamp)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Chat Panel ───────────────────────────────────────────────────────────────
+function ChatPanel({
+  negotiation,
+  currentUserId,
+  onBack,
+}: {
+  negotiation: Negotiation;
+  currentUserId: number;
+  onBack: () => void;
+}) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMsgs, setLoadingMsgs] = useState(true);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      const res = await apiClient.get<Message[]>(`/negotiations/${negotiation.id}/messages`);
+      setMessages(res.data);
+    } catch {
+      // silently ignore 
+    } finally {
+      setLoadingMsgs(false);
+    }
+  }, [negotiation.id]);
+
+  useEffect(() => {
+    setLoadingMsgs(true);
+    setMessages([]);
+    loadMessages();
+    inputRef.current?.focus();
+  }, [negotiation.id, loadMessages]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Poll for new messages every 5s
+  useEffect(() => {
+    const interval = setInterval(loadMessages, 5000);
+    return () => clearInterval(interval);
+  }, [loadMessages]);
+
+  const handleSend = async () => {
+    const body = text.trim();
+    if (!body || sending) return;
+    setSending(true);
+    setText('');
+
+    // Optimistic update
+    const optimistic: Message = {
+      id: Date.now(),
+      sender_id: currentUserId,
+      sender_name: 'Eu',
+      body,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    try {
+      const res = await apiClient.post<{ message: string; data: Message }>(
+        `/negotiations/${negotiation.id}/messages`,
+        { body }
+      );
+      // Replace optimistic with real message
+      setMessages((prev) =>
+        prev.map((m) => (m.id === optimistic.id ? res.data.data : m))
+      );
+    } catch {
+      // Revert optimistic on error
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setText(body);
+    } finally {
+      setSending(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const otherName = negotiation.other_user_name || 'Utilizador';
+  const itemName = getItemName(negotiation);
+
+  return (
+    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden" style={{ height: '600px' }}>
+      {/* Header */}
+      <div className="p-4 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="md:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Voltar à lista"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+        >
+          {getOtherUserInitial(negotiation.other_user_name)}
+        </div>
+        <div className="min-w-0">
+          <p className="font-bold text-gray-900 truncate">{otherName}</p>
+          <p className="text-xs text-gray-500 truncate">{itemName}</p>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {loadingMsgs ? (
+          <div className="flex justify-center items-center h-full">
+            <Loader2 size={32} className="animate-spin text-yellow-500" />
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <MessageSquare size={40} className="mb-2 opacity-40" />
+            <p className="text-sm">Nenhuma mensagem ainda</p>
+            <p className="text-xs mt-1">Envia a primeira mensagem!</p>
+          </div>
+        ) : (
+          messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} currentUserId={currentUserId} />
+          ))
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t border-gray-100 flex-shrink-0">
+        <div className="flex gap-2 items-center">
+          <input
+            ref={inputRef}
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Escreve uma mensagem…"
+            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all"
+            disabled={sending}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!text.trim() || sending}
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+            aria-label="Enviar mensagem"
+          >
+            {sending ? (
+              <Loader2 size={18} className="animate-spin text-black" />
+            ) : (
+              <Send size={18} className="text-black" />
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function EmptyChat() {
+  return (
+    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex-col items-center justify-center hidden md:flex" style={{ height: '600px' }}>
+      <MessageSquare size={48} className="text-gray-200 mb-4" />
+      <p className="text-gray-400 font-medium">Selecciona uma conversa</p>
+      <p className="text-gray-300 text-sm mt-1">Escolhe à esquerda para ver as mensagens</p>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export const dynamic = 'force-dynamic';
 
 export default function NegotiationPage() {
-  const [activeCategory, setActiveCategory] = useState('TUDO');
-  const [selectedChat, setSelectedChat] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [message, setMessage] = useState('');
+  const { user } = useAuth();
+  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Negotiation | null>(null);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await apiClient.get<Negotiation[]>('/negotiations');
+        setNegotiations(res.data);
+        // Seleccionar a primeira automaticamente em desktop
+        if (res.data.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
+          setSelected(res.data[0]);
+        }
+      } catch (err) {
+        console.error('Failed to load negotiations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const filtered = negotiations.filter((n) => {
+    const name = (n.other_user_name || '').toLowerCase();
+    const item = getItemName(n).toLowerCase();
+    const q = search.toLowerCase();
+    return name.includes(q) || item.includes(q);
+  });
+
+  // Use o ID gerido pelo authStore (que é persistido em client)
+  const currentUserId: number = user?.id ? Number(user.id) : 0;
 
   return (
     <>
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
         <header className="bg-white p-4 md:p-6 flex justify-between items-center md:shadow-sm sticky top-0 z-10">
           <Sidebar />
-                  <h1 className="text-2xl md:text-3xl font-black logo-wamini">
-                    Wamini
-                  </h1>
-                  <div className="flex gap-3">
-                    <LanguageSwitcher />
-                    <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
-                      <Settings size={24} />
-                    </Link>
-                  </div>
+          <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
+          <div className="flex gap-3">
+            <LanguageSwitcher />
+            <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
+              <Settings size={24} />
+            </Link>
+          </div>
         </header>
+
         <main className="p-4 md:p-6">
           <div className="grid md:grid-cols-3 gap-6">
-            <div className={clsx(
-              'md:col-span-1 bg-white rounded-2xl shadow-sm overflow-hidden',
-              selectedChat ? 'hidden md:block' : 'block'
-            )}>
-              <div className="divide-y divide-gray-100">
-                {CONVERSATIONS.map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => setSelectedChat(conv.id)}
-                    className={clsx(
-                      'w-full p-4 text-left hover:bg-gray-50 transition-colors',
-                      selectedChat === conv.id && 'bg-gray-50'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                        {conv.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm mb-1">{conv.user}</p>
-                        <p className="text-sm text-gray-600 truncate">{conv.lastMessage}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div 
+
+            {/* ── Conversation list ── */}
+            <div
               className={clsx(
-                'md:col-span-2 bg-white rounded-2xl shadow-sm flex flex-col',
-                !selectedChat ? 'hidden md:flex' : 'flex'
-              )} 
+                'md:col-span-1 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col',
+                selected ? 'hidden md:flex' : 'flex'
+              )}
               style={{ height: '600px' }}
             >
-              <div className="p-4 border-b border-gray-200 flex items-center gap-3">
-                <button 
-                  onClick={() => setSelectedChat(null)}
-                  className="md:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full"
-                >
-                  <ArrowLeft size={20} />
-                </button>
-                <h3 className="font-bold text-lg">João João</h3>
+              {/* Search */}
+              <div className="p-3 border-b border-gray-100">
+                <input
+                  type="text"
+                  placeholder="Procurar negociações…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-yellow-400"
+                />
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-2xl p-3 max-w-[70%]">
-                    <p className="text-xs font-bold mb-1">Antônio Guerra</p>
-                    <p className="text-sm">Bom dia, já despachei o produto!</p>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 size={28} className="animate-spin text-yellow-500" />
                   </div>
-                </div>
-              </div>
-              <div className="p-4 border-t border-gray-200">
-                <div className="bg-gray-50 rounded-xl p-3 mb-3">
-                  <div className="flex gap-3">
-                    <img 
-                      src={MOCK_PRODUCT.image} 
-                      alt={MOCK_PRODUCT.name}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm mb-1">{MOCK_PRODUCT.name}</h4>
-                      <p className="text-sm font-semibold text-green-600">{MOCK_PRODUCT.price}</p>
-                    </div>
+                ) : filtered.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <MessageSquare size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhuma negociação ainda</p>
+                    <p className="text-xs mt-1">Contacta um vendedor no mercado!</p>
                   </div>
-                  <p className="text-sm mt-2 text-gray-700">{MOCK_PRODUCT.question}</p>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Mensagem"
-                    className="flex-1"
-                  />
-                  <button 
-                    className="w-12 h-12 rounded-full gradient-wamini flex items-center justify-center"
-                    onClick={() => setMessage('')}
-                  >
-                    <Send size={20} className="text-black" />
-                  </button>
-                </div>
+                ) : (
+                  filtered.map((neg) => (
+                    <button
+                      key={neg.id}
+                      onClick={() => setSelected(neg)}
+                      className={clsx(
+                        'w-full p-4 text-left hover:bg-gray-50 transition-colors',
+                        selected?.id === neg.id && 'bg-yellow-50 border-l-4 border-yellow-400'
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+                        >
+                          {getOtherUserInitial(neg.other_user_name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-gray-900 truncate">
+                            {neg.other_user_name || 'Utilizador'}
+                          </p>
+                          <p className="text-xs text-yellow-600 font-medium truncate mb-0.5">
+                            {getItemName(neg)}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {neg.last_message || 'Iniciar conversa…'}
+                          </p>
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0 ml-1">
+                          {formatTime(neg.last_timestamp)}
+                        </span>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
+
+            {/* ── Chat panel ── */}
+            {selected ? (
+              <ChatPanel
+                key={selected.id}
+                negotiation={selected}
+                currentUserId={currentUserId}
+                onBack={() => setSelected(null)}
+              />
+            ) : (
+              <EmptyChat />
+            )}
+
           </div>
         </main>
       </div>

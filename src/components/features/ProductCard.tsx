@@ -1,54 +1,118 @@
-import React from 'react';
-import Image from 'next/image';
-import { MapPin, User, Tag } from 'lucide-react';
+'use client';
+
+import React, { useState } from 'react';
+import { MapPin, User, MessageCircle, Loader2 } from 'lucide-react';
 import { Product } from '@/types';
-import { Link } from '@/i18n/routing';
+import apiClient, { getToken } from '@/lib/api/client';
 
 interface ProductCardProps {
   product: Product;
+  apiProductId?: number;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, apiProductId }: ProductCardProps) {
+  const [contacting, setContacting] = useState(false);
+
+  const handleContact = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!getToken()) {
+      window.location.href = '/pt/auth/login';
+      return;
+    }
+
+    const id = apiProductId || Number(product.id);
+    if (!id) return;
+
+    setContacting(true);
+    try {
+      await apiClient.post('/negotiations', {
+        product_id: id,
+        messages: [{ body: `Olá! Tenho interesse em "${product.name}". Ainda está disponível?` }],
+      });
+      window.location.href = '/pt/negotiation';
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/pt/auth/login';
+      } else {
+        alert('Erro ao iniciar negociação. Tenta de novo.');
+      }
+    } finally {
+      setContacting(false);
+    }
+  };
+
   return (
-    <Link
-      href={`/market/${product.id}`}
+    <div
       className="group block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden"
-      aria-label={`${product.name} — ${product.price} meticais por ${product.unit}, categoria: ${product.category}, vendedor: ${product.seller.name}, localização: ${product.location}. Clique para ver detalhes`}
+      aria-label={`${product.name} — ${product.price} meticais por ${product.unit}`}
     >
-      <div className="relative h-48 w-full bg-gray-200">
-        {/* Placeholder for image, in real app use next/image with valid src */}
-        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-          {product.image ? (
-             <img src={product.image} alt={`Imagem de ${product.name}`} className="w-full h-full object-cover" />
-          ) : (
-            <span aria-hidden="true">No Image</span>
+      {/* Image */}
+      <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={`Imagem de ${product.name}`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300 text-4xl">
+            🌾
+          </div>
+        )}
+        {/* Category badge */}
+        <span className="absolute top-3 left-3 text-xs font-bold px-2 py-1 rounded-full bg-white/90 text-gray-700 shadow-sm">
+          {product.category}
+        </span>
+      </div>
+
+      <div className="p-4">
+        <h3 className="text-base font-bold text-gray-900 leading-tight line-clamp-2">
+          {product.name}
+        </h3>
+
+        <div className="mt-3 flex items-center justify-between">
+          <div className="font-black text-xl text-gray-900">
+            {product.price}{' '}
+            <span className="text-sm font-normal text-gray-400">MTs / {product.unit}</span>
+          </div>
+          {product.quantity > 0 && (
+            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">
+              {product.quantity} disponível
+            </span>
           )}
         </div>
-      </div>
-      <div className="p-4" aria-hidden="true">
-        <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition-colors">{product.name}</h3>
-        <div className="mt-1 flex items-center text-sm text-gray-500">
-          <Tag size={14} className="mr-1" aria-hidden="true" />
-          <span>{product.category}</span>
-        </div>
-        
-        <div className="mt-3 flex items-center justify-between">
-          <div className="font-bold text-xl text-gray-900">
-            {product.price} MTs <span className="text-sm font-normal text-gray-500">/ {product.unit}</span>
-          </div>
-        </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center">
-            <User size={14} className="mr-1" aria-hidden="true" />
+        <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <User size={12} aria-hidden="true" />
             <span>{product.seller.name}</span>
           </div>
-          <div className="flex items-center">
-            <MapPin size={14} className="mr-1" aria-hidden="true" />
-            <span>{product.location}</span>
-          </div>
+          {product.location && (
+            <div className="flex items-center gap-1">
+              <MapPin size={12} aria-hidden="true" />
+              <span>{product.location}</span>
+            </div>
+          )}
         </div>
+
+        {/* Contact button */}
+        <button
+          onClick={handleContact}
+          disabled={contacting}
+          className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+          aria-label={`Contactar vendedor sobre ${product.name}`}
+        >
+          {contacting ? (
+            <><Loader2 size={16} className="animate-spin" /> A contactar…</>
+          ) : (
+            <><MessageCircle size={16} /> Contactar</>
+          )}
+        </button>
       </div>
-    </Link>
+    </div>
   );
 }

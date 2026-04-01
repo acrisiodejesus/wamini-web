@@ -44,3 +44,9 @@ next-env.d.ts
 playwright-report/
 test-results/
 playwright/.cache/
+
+# SQLite database (dev only)
+.db/
+*.db
+*.db-wal
+*.db-shm

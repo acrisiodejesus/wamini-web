@@ -1,56 +1,63 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://wamini-api.onrender.com/api/v1';
+// Em server-side (SSR) o axios precisa de URL absoluta.
+// Em client-side, /api/v1 é suficiente (relativo ao origin).
+function getBaseURL(): string {
+  // Variável definida no .env (pode ser relativa: /api/v1)
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+
+  // Se já é absoluta, usar directamente
+  if (envUrl.startsWith('http')) return envUrl;
+
+  // Em SSR (Node.js), construir URL absoluta
+  if (typeof window === 'undefined') {
+    // Em produção no Coolify o domínio vem em NEXT_PUBLIC_APP_URL ou HOSTNAME
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      `http://localhost:${process.env.PORT || 3000}`;
+    return `${appUrl}${envUrl}`;
+  }
+
+  // No browser, usar relativo ao origin actual
+  return `${window.location.origin}${envUrl}`;
+}
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 30000,
 });
 
 // Request interceptor - attach JWT token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Recalcular baseURL em cada request (o window.location pode mudar)
+    if (typeof window !== 'undefined' && config.baseURL?.startsWith('/')) {
+      config.baseURL = `${window.location.origin}${config.baseURL}`;
+    }
     const token = getToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor - handle errors
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Handle 401 Unauthorized - token expired
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
-      try {
-        // Try to refresh token
-        const newToken = await refreshToken();
-        if (newToken && originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return apiClient(originalRequest);
-        }
-      } catch (refreshError) {
-        // Refresh failed, clear token and redirect to login
-        clearToken();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/auth/login';
-        }
-        return Promise.reject(refreshError);
+      clearToken();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
       }
     }
 
@@ -58,7 +65,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Token management functions
+// ─── Token management ─────────────────────────────────────────────────────────
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('wamini_token');
@@ -84,35 +91,6 @@ export function getStoredUser(): any | null {
 export function setStoredUser(user: any): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('wamini_user', JSON.stringify(user));
-}
-
-// Refresh token function (placeholder - adjust based on actual API)
-async function refreshToken(): Promise<string | null> {
-  try {
-    const token = getToken();
-    if (!token) return null;
-
-    const response = await axios.post(
-      `${API_BASE_URL}/users/refresh`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    const newToken = response.data?.token || response.data?.access_token;
-    if (newToken) {
-      setToken(newToken);
-      return newToken;
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    return null;
-  }
 }
 
 export default apiClient;

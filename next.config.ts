@@ -24,7 +24,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https' as const,
-        hostname: 'wamini-api.onrender.com',
+        hostname: 'images.unsplash.com',
       },
     ],
   },
@@ -46,7 +46,7 @@ const nextConfig = {
   // ── Experimental ─────────────────────────────────────────────────────────
   experimental: {
     // Tree-shake automático: só os ícones e componentes usados são incluídos no bundle
-    optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
+    // optimizePackageImports: ['lucide-react', 'framer-motion', '@tanstack/react-query'],
   },
 } satisfies NextConfig;
 

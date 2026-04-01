@@ -1,28 +1,63 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import clsx from 'clsx';
+import apiClient from '@/lib/api/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AdvertiseModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const categories = ['TUDO', 'PRODUTOS', 'TRANSPORTE', 'INSUMOS'];
+const categories = ['PRODUTOS', 'TRANSPORTE', 'INSUMOS'] as const;
+type Category = typeof categories[number];
 
 export default function AdvertiseModal({ isOpen, onClose }: AdvertiseModalProps) {
-  const [activeCategory, setActiveCategory] = useState('TUDO');
+  const [activeCategory, setActiveCategory] = useState<Category>('PRODUTOS');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { register, handleSubmit, reset } = useForm();
+  const queryClient = useQueryClient();
 
   if (!isOpen) return null;
 
-  const onSubmit = (data: any) => {
-    console.log('Anúncio criado:', data);
-    alert('Anúncio criado com sucesso!');
-    reset();
-    onClose();
+  const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: data.name,
+        quantity: Number(data.quantity) || 0,
+        price: Number(data.price) || 0,
+        location: data.location,
+      };
+
+      if (activeCategory === 'PRODUTOS') {
+        await apiClient.post('/products', { ...payload, category: 'PRODUTOS' });
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+      } else if (activeCategory === 'INSUMOS') {
+        await apiClient.post('/inputs', payload);
+        queryClient.invalidateQueries({ queryKey: ['inputs'] });
+      } else if (activeCategory === 'TRANSPORTE') {
+        await apiClient.post('/transports', {
+          transport_type: data.productType || 'Pick-up',
+          name: data.name,
+          price_per_km: Number(data.price) || 0,
+          location: data.location,
+        });
+        queryClient.invalidateQueries({ queryKey: ['transports'] });
+      }
+
+      reset();
+      onClose();
+      alert('Anúncio publicado com sucesso!');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Erro ao publicar anúncio. Verifica se estás autenticado.';
+      alert(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -161,10 +196,11 @@ export default function AdvertiseModal({ isOpen, onClose }: AdvertiseModalProps)
 
           <button 
             type="submit" 
-            className="w-full btn-gradient font-bold py-3 text-lg"
+            disabled={isSubmitting}
+            className="w-full btn-gradient font-bold py-3 text-lg flex items-center justify-center gap-2"
             aria-label="Submeter o anúncio ao mercado"
           >
-            SUBMETER
+            {isSubmitting ? <><Loader2 size={20} className="animate-spin" /> A publicar...</> : 'SUBMETER'}
           </button>
         </form>
       </div>
