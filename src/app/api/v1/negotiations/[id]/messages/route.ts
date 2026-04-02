@@ -21,6 +21,12 @@ export async function GET(
     ).get(Number(id), payload.userId, payload.userId);
     if (!neg) return apiError('Negociação não encontrada', 404);
 
+    // Marcar como lida as mensagens enviadas por outros para nós
+    db.prepare(`
+      UPDATE messages SET is_read = 1 
+      WHERE negotiation_id = ? AND sender_id != ? AND is_read = 0
+    `).run(Number(id), payload.userId);
+
     const messages = db.prepare(`
       SELECT m.*, u.name as sender_name
       FROM messages m
@@ -45,11 +51,11 @@ export async function POST(
     if (!payload) return apiError('Não autenticado', 401);
 
     const { id } = await params;
-    const body = await req.json();
-    const { body: msgBody } = body;
+    const bodyText = await req.json();
+    const { body: msgBody, attachment_url, attachment_type } = bodyText;
 
-    if (!msgBody?.trim()) {
-      return apiError('Mensagem não pode estar vazia', 400);
+    if ((!msgBody || !msgBody.trim()) && !attachment_url) {
+      return apiError('Mensagem não pode estar vazia sem anexos', 400);
     }
 
     const db = getDb();
@@ -61,9 +67,15 @@ export async function POST(
     if (!neg) return apiError('Negociação não encontrada', 404);
 
     const result = db.prepare(`
-      INSERT INTO messages (negotiation_id, sender_id, body)
-      VALUES (?, ?, ?)
-    `).run(Number(id), payload.userId, msgBody.trim());
+      INSERT INTO messages (negotiation_id, sender_id, body, attachment_url, attachment_type)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      Number(id), 
+      payload.userId, 
+      msgBody ? msgBody.trim() : null,
+      attachment_url || null,
+      attachment_type || null
+    );
 
     const message = db.prepare(`
       SELECT m.*, u.name as sender_name

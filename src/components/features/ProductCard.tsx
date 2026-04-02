@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { MapPin, User, MessageCircle, Loader2 } from 'lucide-react';
 import { Product } from '@/types';
 import apiClient, { getToken } from '@/lib/api/client';
+import clsx from 'clsx';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProductCardProps {
   product: Product;
@@ -12,12 +14,17 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, apiProductId }: ProductCardProps) {
   const [contacting, setContacting] = useState(false);
+  const { user } = useAuth();
+
+  const isMyProduct = user?.id?.toString() === product.seller.id.toString();
 
   const handleContact = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!getToken()) {
+    if (isMyProduct) return;
+
+    if (!user) {
       window.location.href = '/pt/auth/login';
       return;
     }
@@ -27,7 +34,7 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
 
     setContacting(true);
     try {
-      await apiClient.post('/negotiations', {
+      await apiClient.post(`/negotiations`, {
         product_id: id,
         messages: [{ body: `Olá! Tenho interesse em "${product.name}". Ainda está disponível?` }],
       });
@@ -101,12 +108,17 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
         {/* Contact button */}
         <button
           onClick={handleContact}
-          disabled={contacting}
-          className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
-          aria-label={`Contactar vendedor sobre ${product.name}`}
+          disabled={contacting || isMyProduct}
+          className={clsx(
+            "mt-4 w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60",
+            isMyProduct ? "bg-gray-100 text-gray-500 border border-gray-200" : "text-black"
+          )}
+          style={isMyProduct ? {} : { background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+          aria-label={isMyProduct ? "Este é o teu anúncio" : `Contactar vendedor sobre ${product.name}`}
         >
-          {contacting ? (
+          {isMyProduct ? (
+            <>O teu anúncio</>
+          ) : contacting ? (
             <><Loader2 size={16} className="animate-spin" /> A contactar…</>
           ) : (
             <><MessageCircle size={16} /> Contactar</>

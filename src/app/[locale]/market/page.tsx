@@ -4,6 +4,10 @@ import React, { useState, useCallback, useRef } from 'react';
 import MarketFilters from '@/components/features/MarketFilters';
 import ProductCard from '@/components/features/ProductCard';
 import Sidebar from '@/components/layout/Sidebar';
+import { Link } from '@/i18n/routing';
+import { Settings } from 'lucide-react';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+import NotificationsDropdown from '@/components/features/NotificationsDropdown';
 import { Product } from '@/types';
 import { Product as ApiProduct } from '@/lib/api/types';
 import { Loader2 } from 'lucide-react';
@@ -56,6 +60,17 @@ export default function MarketPage() {
       <Sidebar />
       
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
+        <header className="bg-white p-4 md:p-6 flex justify-between items-center md:shadow-sm sticky top-0 z-10">
+          <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
+          <div className="flex gap-3">
+            <NotificationsDropdown />
+            <LanguageSwitcher />
+            <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
+              <Settings size={24} />
+            </Link>
+          </div>
+        </header>
+
         <main className="p-4 md:p-8">
           <MarketFilters 
             onSearch={handleSearch}

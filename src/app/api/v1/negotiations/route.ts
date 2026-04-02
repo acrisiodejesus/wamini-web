@@ -36,10 +36,16 @@ export async function GET(req: NextRequest) {
         ORDER BY timestamp DESC LIMIT 1
       `).get(neg.id) as any;
 
+      const unreadCount = (db.prepare(`
+        SELECT COUNT(*) as c FROM messages
+        WHERE negotiation_id = ? AND sender_id != ? AND is_read = 0
+      `).get(neg.id, payload.userId) as any).c;
+
       return {
         ...neg,
         last_message: lastMsg?.body ?? null,
         last_timestamp: lastMsg?.timestamp ?? neg.created_at,
+        unread_count: unreadCount
       };
     });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, ArrowLeft, Loader2, MessageSquare } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, MessageSquare, Paperclip, File } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import { Link } from '@/i18n/routing';
@@ -9,6 +9,8 @@ import { Settings } from 'lucide-react';
 import clsx from 'clsx';
 import apiClient from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
+import NotificationsDropdown from '@/components/features/NotificationsDropdown';
+import { useSearchParams } from 'next/navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Negotiation {
@@ -26,7 +28,10 @@ interface Message {
   id: number;
   sender_id: number;
   sender_name: string;
-  body: string;
+  sender_name: string;
+  body: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   timestamp: string;
 }
 
@@ -62,7 +67,20 @@ function MessageBubble({ msg, currentUserId }: { msg: Message; currentUserId: nu
         {!isMe && (
           <p className="text-xs font-bold mb-1 text-gray-500">{msg.sender_name}</p>
         )}
-        <p className="leading-relaxed">{msg.body}</p>
+        {msg.attachment_url && (
+          <div className="mb-2 mt-1">
+            {msg.attachment_type === 'image' ? (
+              <img src={msg.attachment_url} alt="Anexo" className="rounded-xl max-h-48 object-cover" />
+            ) : msg.attachment_type === 'video' ? (
+              <video src={msg.attachment_url} controls className="rounded-xl max-h-48 object-cover" />
+            ) : (
+              <a href={msg.attachment_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline text-xs">
+                <File size={16} /> Ficheiro Em Anexo
+              </a>
+            )}
+          </div>
+        )}
+        {msg.body && <p className="leading-relaxed">{msg.body}</p>}
         <p className={clsx('text-xs mt-1', isMe ? 'text-black/50 text-right' : 'text-gray-400 text-right')}>
           {formatTime(msg.timestamp)}
         </p>
@@ -85,8 +103,10 @@ function ChatPanel({
   const [loadingMsgs, setLoadingMsgs] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadMessages = useCallback(async () => {
     try {
@@ -119,7 +139,8 @@ function ChatPanel({
 
   const handleSend = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!body && !sending) return; // Permitiremos enviar anexo ou text, a logica ficara mais abaixo.
+    if (sending) return;
     setSending(true);
     setText('');
 
@@ -152,6 +173,39 @@ function ChatPanel({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadRes = await apiClient.post<{ url: string; type: string }>('/uploads', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      // Envia a mensagem com anexo e um body opcional vazio
+      const res = await apiClient.post<{ data: Message }>(
+        `/negotiations/${negotiation.id}/messages`,
+        { 
+          body: text.trim() || undefined,
+          attachment_url: uploadRes.data.url,
+          attachment_type: uploadRes.data.type
+        }
+      );
+      
+      setText(''); // limpa
+      setMessages((prev) => [...prev, res.data.data]);
+    } catch (err) {
+      alert('Erro ao enviar ficheiro. Pode exceder o tamanho máximo.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -163,7 +217,7 @@ function ChatPanel({
   const itemName = getItemName(negotiation);
 
   return (
-    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden" style={{ height: '600px' }}>
+    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-140px)] md:h-[600px]">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
         <button
@@ -208,6 +262,22 @@ function ChatPanel({
       {/* Input */}
       <div className="p-4 border-t border-gray-100 flex-shrink-0">
         <div className="flex gap-2 items-center">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={handleFileUpload}
+            accept="image/*,video/*"
+          />
+          <button 
+            type="button"
+            className="p-3 text-gray-400 hover:text-gray-700 bg-gray-50 rounded-full transition-colors flex-shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+          </button>
+
           <input
             ref={inputRef}
             type="text"
@@ -216,11 +286,11 @@ function ChatPanel({
             onKeyDown={handleKeyDown}
             placeholder="Escreve uma mensagem…"
             className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:border-yellow-400 focus:bg-white transition-all"
-            disabled={sending}
+            disabled={sending || uploading}
           />
           <button
             onClick={handleSend}
-            disabled={!text.trim() || sending}
+            disabled={(!text.trim() && !uploading) || sending}
             className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
             aria-label="Enviar mensagem"
@@ -240,7 +310,7 @@ function ChatPanel({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyChat() {
   return (
-    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex-col items-center justify-center hidden md:flex" style={{ height: '600px' }}>
+    <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex-col items-center justify-center hidden md:flex h-[600px]">
       <MessageSquare size={48} className="text-gray-200 mb-4" />
       <p className="text-gray-400 font-medium">Selecciona uma conversa</p>
       <p className="text-gray-300 text-sm mt-1">Escolhe à esquerda para ver as mensagens</p>
@@ -253,6 +323,9 @@ export const dynamic = 'force-dynamic';
 
 export default function NegotiationPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const chatId = searchParams.get('chat');
+
   const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Negotiation | null>(null);
@@ -263,7 +336,17 @@ export default function NegotiationPage() {
       try {
         const res = await apiClient.get<Negotiation[]>('/negotiations');
         setNegotiations(res.data);
-        // Seleccionar a primeira automaticamente em desktop
+        
+        // Se houver um chatId na Query String, tenta abri-lo directamente (acção da notificação)
+        if (chatId) {
+          const target = res.data.find(n => n.id.toString() === chatId);
+          if (target) {
+            setSelected(target);
+            return;
+          }
+        }
+
+        // Caso contrário, Seleccionar a primeira automaticamente em desktop
         if (res.data.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
           setSelected(res.data[0]);
         }
@@ -288,11 +371,12 @@ export default function NegotiationPage() {
 
   return (
     <>
+      <Sidebar />
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
         <header className="bg-white p-4 md:p-6 flex justify-between items-center md:shadow-sm sticky top-0 z-10">
-          <Sidebar />
           <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
           <div className="flex gap-3">
+            <NotificationsDropdown />
             <LanguageSwitcher />
             <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
               <Settings size={24} />
@@ -306,10 +390,9 @@ export default function NegotiationPage() {
             {/* ── Conversation list ── */}
             <div
               className={clsx(
-                'md:col-span-1 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col',
+                'md:col-span-1 bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-140px)] md:h-[600px]',
                 selected ? 'hidden md:flex' : 'flex'
               )}
-              style={{ height: '600px' }}
             >
               {/* Search */}
               <div className="p-3 border-b border-gray-100">

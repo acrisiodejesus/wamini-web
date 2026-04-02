@@ -96,7 +96,10 @@ function initSchema(db: Database.Database) {
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       negotiation_id INTEGER NOT NULL REFERENCES negotiations(id),
       sender_id      INTEGER NOT NULL REFERENCES users(id),
-      body           TEXT    NOT NULL,
+      body           TEXT,
+      attachment_url TEXT,
+      attachment_type TEXT,
+      is_read        INTEGER DEFAULT 0,
       timestamp      TEXT    DEFAULT (datetime('now'))
     );
 
@@ -110,6 +113,11 @@ function initSchema(db: Database.Database) {
       trend    TEXT    DEFAULT 'stable'
     );
   `);
+
+  // Migrações em tempo real para tabelas existentes
+  try { db.exec('ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0;'); } catch (e) { /* Coluna já existe */ }
+  try { db.exec('ALTER TABLE messages ADD COLUMN attachment_url TEXT;'); } catch (e) { /* Coluna já existe */ }
+  try { db.exec('ALTER TABLE messages ADD COLUMN attachment_type TEXT;'); } catch (e) { /* Coluna já existe */ }
 }
 
 // ─── Seed data (só insere se a DB estiver vazia) ──────────────────────────────

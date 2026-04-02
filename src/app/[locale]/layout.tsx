@@ -6,6 +6,7 @@ import { Inter } from 'next/font/google';
 import AccessibilityPanel from '@/components/accessibility/AccessibilityPanel';
 import Providers from './providers';
 import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
+import NotificationSystem from '@/components/layout/NotificationSystem';
 import '../globals.css';
 
 // Carrega Inter de forma self-hosted via next/font — elimina dependência de CDN
@@ -43,6 +44,7 @@ export default async function LocaleLayout({
       <body className="min-h-screen bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages}>
           <Providers>
+            <NotificationSystem />
             {children}
             <AccessibilityPanel />
             <ServiceWorkerRegister />

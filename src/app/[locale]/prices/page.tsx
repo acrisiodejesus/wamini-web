@@ -8,6 +8,7 @@ import { Link } from '@/i18n/routing';
 import { Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
+import NotificationsDropdown from '@/components/features/NotificationsDropdown';
 
 interface Price {
   id: number;
@@ -44,11 +45,12 @@ export default function PricesPage() {
 
   return (
     <>
+      <Sidebar />
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
         <header className="bg-white p-4 md:p-6 flex justify-between items-center md:shadow-sm sticky top-0 z-10">
-          <Sidebar />
           <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
           <div className="flex gap-3">
+            <NotificationsDropdown />
             <LanguageSwitcher />
             <Link href="/settings" className="p-2 rounded-full hover:bg-gray-100">
               <Settings size={24} />
@@ -76,28 +78,30 @@ export default function PricesPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead className="gradient-wamini">
-                  <tr>
-                    <th className="text-left p-4 font-bold">Produto</th>
-                    <th className="text-left p-4 font-bold">Preço</th>
-                    <th className="text-left p-4 font-bold hidden md:table-cell">Localização</th>
-                    <th className="text-left p-4 font-bold hidden md:table-cell">Data</th>
-                    <th className="text-left p-4 font-bold">Tendência</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((price) => (
-                    <tr key={price.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-4 font-semibold">{price.product}</td>
-                      <td className="p-4 text-green-600 font-bold">{price.price} {price.unit}</td>
-                      <td className="p-4 text-gray-600 hidden md:table-cell">{price.location}</td>
-                      <td className="p-4 text-gray-500 text-sm hidden md:table-cell">{price.date}</td>
-                      <td className="p-4"><TrendIcon trend={price.trend} /></td>
+              <div className="overflow-x-auto w-full">
+                <table className="w-full min-w-[600px]">
+                  <thead className="gradient-wamini">
+                    <tr>
+                      <th className="text-left p-4 font-bold">Produto</th>
+                      <th className="text-left p-4 font-bold">Preço</th>
+                      <th className="text-left p-4 font-bold hidden md:table-cell">Localização</th>
+                      <th className="text-left p-4 font-bold hidden md:table-cell">Data</th>
+                      <th className="text-left p-4 font-bold">Tendência</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((price) => (
+                      <tr key={price.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="p-4 font-semibold whitespace-nowrap">{price.product}</td>
+                        <td className="p-4 text-green-600 font-bold whitespace-nowrap">{price.price} {price.unit}</td>
+                        <td className="p-4 text-gray-600 hidden md:table-cell whitespace-nowrap">{price.location}</td>
+                        <td className="p-4 text-gray-500 text-sm hidden md:table-cell whitespace-nowrap">{price.date}</td>
+                        <td className="p-4"><TrendIcon trend={price.trend} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               {filtered.length === 0 && !isLoading && (
                 <div className="text-center py-12">
