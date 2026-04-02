@@ -6,13 +6,7 @@ import { Inter } from 'next/font/google';
 import AccessibilityPanel from '@/components/accessibility/AccessibilityPanel';
 import Providers from './providers';
 import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
-import dynamic from 'next/dynamic';
 import '../globals.css';
-
-const NotificationSystem = dynamic(
-  () => import('@/components/layout/NotificationSystem'),
-  { ssr: false }
-);
 
 // Carrega Inter de forma self-hosted via next/font — elimina dependência de CDN
 // e activa font-display:swap automaticamente
@@ -49,7 +43,6 @@ export default async function LocaleLayout({
       <body className="min-h-screen bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages}>
           <Providers>
-            <NotificationSystem />
             {children}
             <AccessibilityPanel />
             <ServiceWorkerRegister />

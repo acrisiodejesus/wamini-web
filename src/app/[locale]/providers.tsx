@@ -3,6 +3,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { VoiceProvider } from '@/contexts/VoiceContext';
+import dynamic from 'next/dynamic';
+
+const NotificationSystem = dynamic(
+  () => import('@/components/layout/NotificationSystem'),
+  { ssr: false }
+);
 
 export default function Providers({ children }: { children: ReactNode }) {
   // useState garante que cada request tem o seu próprio QueryClient no SSR
@@ -26,6 +32,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <VoiceProvider>
+        <NotificationSystem />
         {children}
       </VoiceProvider>
     </QueryClientProvider>
