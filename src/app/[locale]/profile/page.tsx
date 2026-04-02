@@ -19,9 +19,9 @@ const PLANS = [
 
 export default function ProfilePage() {
   const t = useTranslations('Common');
-  const { user: authUser, setUser } = useAuthStore();
+  const { user: authUser, updateUser } = useAuthStore();
   
-  const [profile, setProfile] = useState<User | null>(authUser);
+  const [profile, setProfile] = useState<User | null>(authUser as unknown as User);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', localization: '', photoUrl: '' });
   const [isSaving, setIsSaving] = useState(false);
@@ -62,7 +62,7 @@ export default function ProfilePage() {
       });
       setProfile(res.data);
       // Actualiza o store do context principal para fotos no navbar se existirem
-      if (authUser) setUser({ ...authUser, name: res.data.name }); 
+      if (authUser) updateUser({ name: res.data.name }); 
       setIsEditing(false);
       alert('Perfil actualizado!');
     } catch {
