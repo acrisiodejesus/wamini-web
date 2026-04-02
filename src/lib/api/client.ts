@@ -3,23 +3,29 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 // Em server-side (SSR) o axios precisa de URL absoluta.
 // Em client-side, /api/v1 é suficiente (relativo ao origin).
 function getBaseURL(): string {
-  // Variável definida no .env (pode ser relativa: /api/v1)
   const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 
-  // Se já é absoluta, usar directamente
-  if (envUrl.startsWith('http')) return envUrl;
-
-  // Em SSR (Node.js), construir URL absoluta
-  if (typeof window === 'undefined') {
-    // Em produção no Coolify o domínio vem em NEXT_PUBLIC_APP_URL ou HOSTNAME
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      `http://localhost:${process.env.PORT || 3000}`;
-    return `${appUrl}${envUrl}`;
+  // 1. Em client-side (browser), ignora domínios hardcoded (ex: localhost que tenha vindo no .env)
+  // e força SEMPRE a usar o mesmo origin (wamini.co.mz)
+  if (typeof window !== 'undefined') {
+    let path = envUrl;
+    if (envUrl.startsWith('http')) {
+      try {
+        path = new URL(envUrl).pathname;
+      } catch (e) {
+        path = '/api/v1';
+      }
+    }
+    return `${window.location.origin}${path}`;
   }
 
-  // No browser, usar relativo ao origin actual
-  return `${window.location.origin}${envUrl}`;
+  // 2. Em SSR (Node.js), precisa de URL absoluta para comunicar no container
+  if (envUrl.startsWith('http')) return envUrl;
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    `http://localhost:${process.env.PORT || 3000}`;
+  return `${appUrl}${envUrl}`;
 }
 
 // Create axios instance
