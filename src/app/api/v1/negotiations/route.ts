@@ -62,7 +62,17 @@ export async function POST(req: NextRequest) {
     if (!payload) return apiError('Não autenticado', 401);
 
     const body = await req.json();
-    const { product_id, input_id, transport_id, messages } = body;
+    let { product_id, input_id, transport_id, messages } = body;
+
+    // Helper to strip prefixes if string IDs were passed
+    const strip = (id: any) => {
+      if (typeof id === 'string') return Number(id.replace(/^(product_|input_|transport_)/, ''));
+      return id;
+    };
+
+    product_id = strip(product_id);
+    input_id = strip(input_id);
+    transport_id = strip(transport_id);
 
     if (!product_id && !input_id && !transport_id) {
       return apiError('É necessário indicar um produto, insumo ou transporte', 400);

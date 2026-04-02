@@ -9,10 +9,12 @@ const withSerwist = withSerwistInit({
   swDest: 'public/sw.js',
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
-  // Exclude problematic chunks that cause 404s during precaching in Next.js App Router
+  // Excluir chunks dinâmicos que mudam frequentemente e causam 404s no precaching
   exclude: [
-    /\/_next\/static\/chunks\/app\/not-found.*\.js$/,
-    /\/_next\/static\/chunks\/app\/manifest\.webmanifest\/route.*\.js$/,
+    /\/_next\/static\/chunks\/.*\.js$/,
+    /\/_next\/static\/css\/.*\.css$/,
+    /\/_next\/static\/.*\/_ssgManifest\.js$/,
+    /\/_next\/static\/.*\/_buildManifest\.js$/,
   ],
 });
 

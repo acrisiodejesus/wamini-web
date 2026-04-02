@@ -37,8 +37,10 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
       return;
     }
 
-    const id = apiProductId || Number(product.id);
-    if (!id) return;
+    const rawId = apiProductId || product.id;
+    const cleanId = typeof rawId === 'string' ? Number(rawId.replace(/^(product_|input_|transport_)/, '')) : Number(rawId);
+    
+    if (!cleanId || isNaN(cleanId)) return;
 
     setContacting(true);
     try {
@@ -47,11 +49,11 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
       };
 
       if (product.item_type === 'input') {
-        payload.input_id = id;
+        payload.input_id = cleanId;
       } else if (product.item_type === 'transport') {
-        payload.transport_id = id;
+        payload.transport_id = cleanId;
       } else {
-        payload.product_id = id;
+        payload.product_id = cleanId;
       }
 
       await apiClient.post(`/negotiations`, payload);

@@ -25,12 +25,22 @@ let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (_db) return _db;
-  _db = new Database(DB_PATH);
-  _db.pragma('journal_mode = WAL'); // melhor performance para reads concorrentes
-  _db.pragma('foreign_keys = ON');
-  initSchema(_db);
-  seedData(_db);
-  return _db;
+  try {
+    _db = new Database(DB_PATH);
+    _db.pragma('journal_mode = WAL'); // melhor performance para reads concorrentes
+    _db.pragma('foreign_keys = ON');
+    
+    console.log('--- DB Init: Schema ---');
+    initSchema(_db);
+    
+    console.log('--- DB Init: Seed ---');
+    seedData(_db);
+    
+    return _db;
+  } catch (err) {
+    console.error('Critical Database initialization error:', err);
+    throw err;
+  }
 }
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -139,7 +149,7 @@ function initSchema(db: Database.Database) {
     db.prepare("UPDATE products SET photo = '/products/milho.png' WHERE name LIKE 'Milho%'").run();
     db.prepare("UPDATE products SET photo = '/products/arroz.png' WHERE name LIKE 'Arroz%'").run();
     db.prepare("UPDATE products SET photo = '/products/banana.png' WHERE name LIKE 'Banana%'").run();
-  } catch (e) { console.error('Migration fix images error:', e); }
+  } catch (e) { console.error('Migration fix images error:', (e as any).message); }
 }
 
 // ─── Seed data (só insere se a DB estiver vazia) ──────────────────────────────
@@ -190,16 +200,16 @@ function seedData(db: Database.Database) {
   const inputs = [
     ['Fertilizante NPK — 50kg', 100, 2500, '/products/fertilizante.png', 1],
     ['Sementes de Milho — 10kg', 50, 1200, '/products/sementes_milho.png', 1],
-    ['Pesticida Orgânico — 5L', 30, 1800, '/products/tomate.png', 2],
-    ['Composto Orgânico — 25kg', 200, 500, '/products/mandioca.png', 3],
-    ['Herbicida — 1L', 40, 950, '/products/alho.png', 2],
+    ['Pesticida Orgânico — 5L', 30, 1800, 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=400', 2],
+    ['Composto Orgânico — 25kg', 200, 500, 'https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?q=80&w=400', 3],
+    ['Herbicida — 1L', 40, 950, 'https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=400', 2],
     ['Sementes de Tomate — 1kg', 20, 2200, '/products/tomate.png', 2],
-    ['Irrigação por Gotejamento — Kit', 10, 8500, '/products/milho.png', 1],
-    ['Esterco de Bovino — 30kg', 150, 300, '/products/mandioca.png', 3],
+    ['Irrigação por Gotejamento — Kit', 10, 8500, 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=400', 1],
+    ['Esterco de Bovino — 30kg', 150, 300, 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?q=80&w=400', 3],
     ['Saco de Ráfia — 50kg (100un)', 500, 1500, '/products/arroz.png', 1],
-    ['Calcário Agrícola — 40kg', 100, 800, '/products/milho.png', 2],
-    ['Enxada Manual — Cabo Madeira', 60, 450, '/products/feijao.png', 3],
-    ['Pulverizador Costal — 16L', 15, 3800, '/products/tomate.png', 1],
+    ['Calcário Agrícola — 40kg', 100, 800, 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=400', 2],
+    ['Enxada Manual — Cabo Madeira', 60, 450, 'https://images.unsplash.com/photo-1589133411037-333e8a716c52?q=80&w=400', 3],
+    ['Pulverizador Costal — 16L', 15, 3800, 'https://images.unsplash.com/photo-1628155930542-3c7a64e2c833?q=80&w=400', 1],
   ];
   for (const i of inputs) insertInput.run(...i);
 
@@ -210,14 +220,14 @@ function seedData(db: Database.Database) {
   `);
 
   const transports = [
-    ['Camião', 'Camião 10 Toneladas', 150, '/products/milho.png', 'Nampula', 1],
-    ['Pick-up', 'Pick-up Toyota Hilux', 60, '/products/tomate.png', 'Monapo', 1],
-    ['Moto', 'Moto de Carga', 25, '/products/mandioca.png', 'Meconta', 2],
-    ['Camioneta', 'Camioneta Frigorífica', 180, '/products/papaia.png', 'Nacala', 1],
-    ['Camião', 'Camião de Carga — Ribaué', 140, '/products/milho.png', 'Ribaué', 3],
-    ['Bicicleta', 'Triciclo de Carga — Angoche', 20, '/products/caju.png', 'Angoche', 3],
-    ['Tractor', 'Trator com Reboque', 200, '/products/milho.png', 'Malema', 2],
-    ['Carrinha', 'Carrinha 3.5 Toneladas', 90, '/products/mandioca.png', 'Rapale', 2],
+    ['Camião', 'Camião 10 Toneladas', 2.5, 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=400', 'Nampula', 1],
+    ['Pick-up', 'Pick-up Toyota Hilux', 1.2, 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=400', 'Monapo', 1],
+    ['Moto', 'Moto de Carga', 0.8, 'https://images.unsplash.com/photo-1558981403-c5f97cb9d511?q=80&w=400', 'Meconta', 2],
+    ['Camioneta', 'Camioneta Frigorífica', 3.5, 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?q=80&w=400', 'Nacala', 1],
+    ['Camião', 'Camião de Carga — Ribaué', 2.2, 'https://images.unsplash.com/photo-1586191121278-200df44c5b6c?q=80&w=400', 'Ribaué', 3],
+    ['Bicicleta', 'Triciclo de Carga — Angoche', 0.4, 'https://images.unsplash.com/photo-1532152273105-ff390ade94eb?q=80&w=400', 'Angoche', 3],
+    ['Tractor', 'Trator com Reboque', 4.0, 'https://images.unsplash.com/photo-1593110291517-ef5f7ef5e9da?q=80&w=400', 'Malema', 2],
+    ['Carrinha', 'Carrinha 3.5 Toneladas', 1.8, 'https://images.unsplash.com/photo-1542461979660-aa109403c945?q=80&w=400', 'Rapale', 2],
   ];
   for (const t of transports) insertTransport.run(...t);
 

@@ -11,83 +11,67 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || '';
 
     const db = getDb();
-    let queryParts: string[] = [];
-    let params: any[] = [];
-
-    // Base queries for each type
-    const productQuery = `
-      SELECT p.id, p.name, p.quantity, p.price, p.photo, p.category, p.location, 'product' as item_type, u.name as seller_name, p.created_at
+    
+    // Base subqueries with unified columns and unique IDs
+    const productBase = `
+      SELECT ('product_' || p.id) as id, p.name as name, p.quantity as quantity, p.price as price, p.photo as photo, p.category as category, p.location as location, 'product' as item_type, u.name as seller_name, p.created_at as created_at
       FROM products p
       LEFT JOIN users u ON p.user_id = u.id
     `;
-    const inputQuery = `
-      SELECT i.id, i.name, i.quantity, i.price, i.photo, 'Insumos' as category, NULL as location, 'input' as item_type, u.name as seller_name, i.created_at
+    const inputBase = `
+      SELECT ('input_' || i.id) as id, i.name as name, i.quantity as quantity, i.price as price, i.photo as photo, 'Insumos' as category, NULL as location, 'input' as item_type, u.name as seller_name, i.created_at as created_at
       FROM inputs i
       LEFT JOIN users u ON i.user_id = u.id
     `;
-    const transportQuery = `
-      SELECT t.id, t.name, NULL as quantity, t.price_per_km as price, t.photo, 'Transporte' as category, t.location, 'transport' as item_type, u.name as seller_name, t.created_at
+    const transportBase = `
+      SELECT ('transport_' || t.id) as id, t.name as name, NULL as quantity, t.price_per_km as price, t.photo as photo, 'Transporte' as category, t.location as location, 'transport' as item_type, u.name as seller_name, t.created_at as created_at
       FROM transports t
       LEFT JOIN users u ON t.user_id = u.id
     `;
 
-    // Filter by type/category matching components/features/MarketFilters.tsx
+    let subQueries: string[] = [];
+    let queryParams: any[] = [];
+
+    // Filter selection
     if (categoryQuery === 'Tudo') {
-      queryParts = [productQuery, inputQuery, transportQuery];
+      subQueries = [productBase, inputBase, transportBase];
     } else if (categoryQuery === 'Produtos') {
-      queryParts = [productQuery];
+      subQueries = [productBase];
     } else if (categoryQuery === 'Insumos') {
-      queryParts = [inputQuery];
+      subQueries = [inputBase];
     } else if (categoryQuery === 'Transporte') {
-      queryParts = [transportQuery];
+      subQueries = [transportBase];
     } else {
-      // Fallback for custom categories
-      queryParts = [`${productQuery} WHERE p.category = ?`];
-      params.push(categoryQuery);
+      // Custom category from products table
+      subQueries = [`SELECT * FROM (${productBase}) WHERE category = ?`];
+      queryParams.push(categoryQuery);
     }
 
-    // Apply search to each part of the union
-    const finalQuery = queryParts.map(part => {
-      if (search) {
-        const hasWhere = part.includes('WHERE');
-        const searchParam = `%${search}%`;
-        params.push(searchParam);
-        return `${part} ${hasWhere ? 'AND' : 'WHERE'} (name LIKE ? OR category LIKE ?)`;
-      }
-      // If we are searching, we need to add the same number of params for category as well
-      return part;
-    }).join(' UNION ALL ') + ' ORDER BY created_at DESC';
-
-    // Correction: each LIKE needs its own param
-    const actualParams: any[] = [];
-    const searchParam = `%${search}%`;
-    
-    // In logic above, I pushed to params inside map, let's fix it properly
-    const sanitizedQueryParts = queryParts.map(part => {
-      if (search) {
-        const hasWhere = part.includes('WHERE');
-        actualParams.push(searchParam, searchParam);
-        return `${part} ${hasWhere ? 'AND' : 'WHERE'} (name LIKE ? OR category LIKE ?)`;
-      }
-      return part;
+    // Apply search to each subquery by wrapping them
+    const finalSubQueries = subQueries.map(base => {
+      if (!search) return base;
+      
+      const searchPattern = `%${search}%`;
+      queryParams.push(searchPattern, searchPattern);
+      
+      return `SELECT * FROM (${base}) WHERE (name LIKE ? OR category LIKE ?)`;
     });
 
-    // Re-handling the custom category param
-    const finalParams = categoryQuery !== 'Tudo' && 
-                        categoryQuery !== 'Produtos' && 
-                        categoryQuery !== 'Insumos' && 
-                        categoryQuery !== 'Transporte' 
-                        ? [categoryQuery, ...actualParams] 
-                        : actualParams;
-
-    const results = db.prepare(sanitizedQueryParts.join(' UNION ALL ') + ' ORDER BY created_at DESC').all(...finalParams);
+    const unionQuery = finalSubQueries.join(' UNION ALL ');
+    const finalQuery = `SELECT * FROM (${unionQuery}) ORDER BY created_at DESC`;
     
+    const results = db.prepare(finalQuery).all(...queryParams);
+
     return apiOk(results);
   } catch (err: any) {
     console.error('Products GET error:', err);
-    return apiError('Erro interno do servidor', 500);
+    return apiError(`Erro interno do servidor: ${err.message}`, 500);
   }
 }
+
+
+
+
 
 export async function POST(req: NextRequest) {
   try {

@@ -23,7 +23,7 @@ function adaptApiProduct(apiProduct: any): Product {
     name: apiProduct.name,
     category: apiProduct.category || 'PRODUTOS',
     price: apiProduct.price,
-    unit: isTransport ? 'km' : 'kg',
+    unit: isTransport ? 'kg/km' : 'kg',
     item_type: apiProduct.item_type || 'product',
     quantity: apiProduct.quantity || 0,
     location: apiProduct.location || '',
@@ -36,7 +36,6 @@ function adaptApiProduct(apiProduct: any): Product {
   };
 }
 
-export const dynamic = 'force-dynamic';
 
 export default function MarketPage() {
   const t = useTranslations('common');

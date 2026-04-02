@@ -39,6 +39,7 @@ function applyContrast(on: boolean) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AccessibilityPanel() {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [fontSize, setFontSize] = useState(FONT_DEFAULT);
@@ -48,6 +49,7 @@ export default function AccessibilityPanel() {
 
   // ── Restore persisted settings on mount ──────────────────────────────────
   useEffect(() => {
+    setMounted(true);
     const savedSize = getInitialFontSize();
     const savedContrast = getInitialContrast();
     setFontSize(savedSize);
@@ -208,6 +210,8 @@ export default function AccessibilityPanel() {
     action: () => setIsOpen(false),
     description: 'Fechar Acessibilidade',
   });
+
+  if (!mounted) return null;
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
