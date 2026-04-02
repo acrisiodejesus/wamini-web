@@ -8,7 +8,7 @@ import { Link } from '@/i18n/routing';
 import Sidebar from '@/components/layout/Sidebar';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import NotificationsDropdown from '@/components/features/NotificationsDropdown';
-import apiClient from '@/lib/api/client';
+import apiClient, { setStoredUser } from '@/lib/api/client';
 import { User } from '@/lib/api/types';
 
 const PLANS = [
@@ -62,7 +62,8 @@ export default function ProfilePage() {
       });
       setProfile(res.data);
       // Actualiza o store do context principal para fotos no navbar se existirem
-      if (authUser) updateUser({ name: res.data.name }); 
+      if (authUser) updateUser(res.data); 
+      setStoredUser(res.data); // Actualiza o estado do useAuth
       setIsEditing(false);
       alert('Perfil actualizado!');
     } catch {
@@ -78,6 +79,8 @@ export default function ProfilePage() {
     try {
       const res = await apiClient.post('/users/subscribe', { plan: planId });
       setProfile(res.data.user);
+      updateUser(res.data.user); // Actualiza o Zustand
+      setStoredUser(res.data.user); // Actualiza o localStorage para useAuth
       alert(res.data.message);
     } catch (err: any) {
       alert(err?.response?.data?.error || 'Erro ao assinar.');

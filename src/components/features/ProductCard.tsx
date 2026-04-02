@@ -5,7 +5,7 @@ import { MapPin, User, MessageCircle, Loader2 } from 'lucide-react';
 import { Product } from '@/types';
 import apiClient, { getToken } from '@/lib/api/client';
 import clsx from 'clsx';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import SubscriptionPaywallModal from '@/components/features/SubscriptionPaywallModal';
 
 interface ProductCardProps {
@@ -16,7 +16,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, apiProductId }: ProductCardProps) {
   const [contacting, setContacting] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const isMyProduct = user?.id?.toString() === product.seller.id.toString();
 

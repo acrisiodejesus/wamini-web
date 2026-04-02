@@ -8,7 +8,7 @@ import { Link } from '@/i18n/routing';
 import { Settings } from 'lucide-react';
 import clsx from 'clsx';
 import apiClient from '@/lib/api/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import NotificationsDropdown from '@/components/features/NotificationsDropdown';
 import { useSearchParams } from 'next/navigation';
 
@@ -321,7 +321,7 @@ function EmptyChat() {
 export const dynamic = 'force-dynamic';
 
 export default function NegotiationPage() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
 
