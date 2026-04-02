@@ -3,29 +3,15 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 // Em server-side (SSR) o axios precisa de URL absoluta.
 // Em client-side, /api/v1 é suficiente (relativo ao origin).
 function getBaseURL(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
-
-  // 1. Em client-side (browser), ignora domínios hardcoded (ex: localhost que tenha vindo no .env)
-  // e força SEMPRE a usar o mesmo origin (wamini.co.mz)
   if (typeof window !== 'undefined') {
-    let path = envUrl;
-    if (envUrl.startsWith('http')) {
-      try {
-        path = new URL(envUrl).pathname;
-      } catch (e) {
-        path = '/api/v1';
-      }
-    }
-    return `${window.location.origin}${path}`;
+    // Forçar path relativo para que o Browser use o mesmo origin (wamini.co.mz)
+    // Eliminando totalmente os erros ERR_SSL_VERSION_OR_CIPHER_MISMATCH
+    return '/api/v1';
   }
 
-  // 2. Em SSR (Node.js), precisa de URL absoluta para comunicar no container
-  if (envUrl.startsWith('http')) return envUrl;
-
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    `http://localhost:${process.env.PORT || 3000}`;
-  return `${appUrl}${envUrl}`;
+  // 2. Em SSR (Node.js), precisa de URL absoluta (localhost)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+  return `${appUrl}/api/v1`;
 }
 
 // Create axios instance
@@ -40,10 +26,11 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor - attach JWT token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Recalcular baseURL em cada request (o window.location pode mudar)
-    if (typeof window !== 'undefined' && config.baseURL?.startsWith('/')) {
-      config.baseURL = `${window.location.origin}${config.baseURL}`;
+    // Garantir que a App usa a baseURL gerada em runtime no client
+    if (typeof window !== 'undefined' && !config.baseURL?.startsWith('/api/v1')) {
+      config.baseURL = '/api/v1';
     }
+    
     const token = getToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -63,7 +50,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       clearToken();
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
+        window.location.href = '/pt/auth/login';
       }
     }
 

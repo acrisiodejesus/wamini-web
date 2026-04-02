@@ -5,10 +5,13 @@ export interface User {
   localization?: string;
   mobile_number: string;
   photo?: string;
+  subscription_plan?: 'free' | 'basic' | 'plus' | 'premium';
+  subscription_status?: 'active' | 'inactive';
+  subscription_expiry?: string;
 }
 
 export interface UserProfile extends User {
-  // Profile endpoint returns same fields as User
+  // Profile endpoint returns same fields as User plus subscriptions
 }
 
 export interface RegisterData {

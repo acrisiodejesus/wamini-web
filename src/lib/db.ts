@@ -44,6 +44,9 @@ function initSchema(db: Database.Database) {
       localization TEXT,
       photo       TEXT,
       role        TEXT    DEFAULT 'buyer',
+      subscription_plan   TEXT    DEFAULT 'free',
+      subscription_status TEXT    DEFAULT 'inactive',
+      subscription_expiry TEXT,
       created_at  TEXT    DEFAULT (datetime('now'))
     );
 
@@ -118,6 +121,9 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0;'); } catch (e) { /* Coluna já existe */ }
   try { db.exec('ALTER TABLE messages ADD COLUMN attachment_url TEXT;'); } catch (e) { /* Coluna já existe */ }
   try { db.exec('ALTER TABLE messages ADD COLUMN attachment_type TEXT;'); } catch (e) { /* Coluna já existe */ }
+  try { db.exec('ALTER TABLE users ADD COLUMN subscription_plan TEXT DEFAULT "free";'); } catch (e) { }
+  try { db.exec('ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT "inactive";'); } catch (e) { }
+  try { db.exec('ALTER TABLE users ADD COLUMN subscription_expiry TEXT;'); } catch (e) { }
 }
 
 // ─── Seed data (só insere se a DB estiver vazia) ──────────────────────────────
