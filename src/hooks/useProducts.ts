@@ -20,7 +20,7 @@ export function useProducts(
     // A query key inclui os filtros — React Query re-busca automaticamente
     // quando a categoria ou pesquisa mudam, e usa cache quando são iguais
     queryKey: ['products', filters?.category, filters?.search, pagination?.page, pagination?.per_page],
-    queryFn: () => productsService.getProducts(),
+    queryFn: () => productsService.getProducts(filters),
     // Dados considerados "frescos" durante 60 segundos
     staleTime: 60 * 1000,
     // Manter dados anteriores enquanto carrega novos (evita flash de loading)

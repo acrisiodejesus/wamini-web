@@ -11,6 +11,7 @@ export interface Product {
     name: string;
   };
   image: string;
+  item_type?: 'product' | 'input' | 'transport';
   description?: string;
 }
 

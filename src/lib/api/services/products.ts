@@ -3,16 +3,15 @@ import type { Product, CreateProductData } from '../types';
 
 export const productsService = {
   /**
-   * Get all products
+   * Get all products with optional filters
    */
-  async getProducts(): Promise<Product[]> {
+  async getProducts(filters?: { category?: string; search?: string }): Promise<Product[]> {
     try {
-      const response = await apiClient.get<Product[]>('/products');
-      console.log('Products API Response:', response.data);
-
-      // Backend returns array directly
+      const response = await apiClient.get<Product[]>('/products', {
+        params: filters
+      });
+      
       const products = Array.isArray(response.data) ? response.data : [];
-
       return products;
     } catch (error: any) {
       console.error('Error fetching products:', error);

@@ -16,18 +16,20 @@ import { useTranslations } from 'next-intl';
 import AdvertiseModal from '@/components/features/AdvertiseModal';
 
 // Adapter function to convert API Product to UI Product
-function adaptApiProduct(apiProduct: ApiProduct & { seller_name?: string; category?: string; location?: string }): Product {
+function adaptApiProduct(apiProduct: any): Product {
+  const isTransport = apiProduct.item_type === 'transport';
   return {
     id: apiProduct.id.toString(),
     name: apiProduct.name,
-    category: (apiProduct as any).category || 'PRODUTOS',
+    category: apiProduct.category || 'PRODUTOS',
     price: apiProduct.price,
-    unit: 'kg',
+    unit: isTransport ? 'km' : 'kg',
+    item_type: apiProduct.item_type || 'product',
     quantity: apiProduct.quantity || 0,
-    location: (apiProduct as any).location || '',
+    location: apiProduct.location || '',
     seller: {
-      id: apiProduct.user_id.toString(),
-      name: (apiProduct as any).seller_name || 'Vendedor',
+      id: apiProduct.user_id?.toString() || '0',
+      name: apiProduct.seller_name || 'Vendedor',
     },
     image: apiProduct.photo || '',
     description: '',
