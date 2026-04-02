@@ -32,11 +32,28 @@ export async function POST(req: NextRequest) {
       return apiError('Tipo, nome e preço/km são obrigatórios', 400);
     }
 
+    const fallbackImages: Record<string, string> = {
+      'camião': 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400',
+      camiao: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400',
+      'pick-up': 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=400',
+      moto: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=400',
+      camioneta: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400',
+      bicicleta: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=400',
+      default: 'https://images.unsplash.com/photo-1627522460108-215683bdc9ee?auto=format&fit=crop&q=80&w=400'
+    };
+
+    let finalPhoto = photo ?? null;
+    if (!finalPhoto) {
+      const lowerName = transport_type.toLowerCase();
+      const match = Object.keys(fallbackImages).find(key => lowerName.includes(key));
+      finalPhoto = match ? fallbackImages[match] : fallbackImages['default'];
+    }
+
     const db = getDb();
     const result = db.prepare(`
       INSERT INTO transports (transport_type, name, price_per_km, photo, location, user_id)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(transport_type, name, price_per_km, photo ?? null, location ?? null, payload.userId);
+    `).run(transport_type, name, price_per_km, finalPhoto, location ?? null, payload.userId);
 
     return apiOk({ message: 'Transporte criado com sucesso', transport_id: result.lastInsertRowid }, 201);
   } catch (err: any) {

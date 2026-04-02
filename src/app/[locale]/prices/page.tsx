@@ -84,7 +84,6 @@ export default function PricesPage() {
                     <tr>
                       <th className="text-left p-4 font-bold">Produto</th>
                       <th className="text-left p-4 font-bold">Preço</th>
-                      <th className="text-left p-4 font-bold hidden md:table-cell">Localização</th>
                       <th className="text-left p-4 font-bold hidden md:table-cell">Data</th>
                       <th className="text-left p-4 font-bold">Tendência</th>
                     </tr>
@@ -94,7 +93,6 @@ export default function PricesPage() {
                       <tr key={price.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="p-4 font-semibold whitespace-nowrap">{price.product}</td>
                         <td className="p-4 text-green-600 font-bold whitespace-nowrap">{price.price} {price.unit}</td>
-                        <td className="p-4 text-gray-600 hidden md:table-cell whitespace-nowrap">{price.location}</td>
                         <td className="p-4 text-gray-500 text-sm hidden md:table-cell whitespace-nowrap">{price.date}</td>
                         <td className="p-4"><TrendIcon trend={price.trend} /></td>
                       </tr>
