@@ -188,14 +188,18 @@ function seedData(db: Database.Database) {
   `);
 
   const inputs = [
-    ['Fertilizante NPK — 50kg', 100, 1800, 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&q=80&w=400', 1],
-    ['Sementes de Milho Híbrido — 5kg', 200, 450, 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80&w=400', 2],
-    ['Pesticida Orgânico — 5L', 50, 800, 'https://images.unsplash.com/photo-1592921870789-04563d55041c?auto=format&fit=crop&q=80&w=400', 1],
-    ['Composto Orgânico — 25kg', 300, 300, 'https://images.unsplash.com/photo-1585513692055-8fe3beea5b3f?auto=format&fit=crop&q=80&w=400', 3],
-    ['Herbicida — 1L', 80, 650, 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&q=80&w=400', 2],
-    ['Sementes de Tomate — 100g', 500, 120, 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400', 1],
-    ['Irrigação por Gotejamento — Kit', 20, 4500, 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80&w=400', 3],
-    ['Esterco de Bovino — 50kg', 150, 180, 'https://images.unsplash.com/photo-1585513692055-8fe3beea5b3f?auto=format&fit=crop&q=80&w=400', 2],
+    ['Fertilizante NPK — 50kg', 100, 2500, '/products/fertilizante.png', 1],
+    ['Sementes de Milho — 10kg', 50, 1200, '/products/sementes_milho.png', 1],
+    ['Pesticida Orgânico — 5L', 30, 1800, '/products/tomate.png', 2],
+    ['Composto Orgânico — 25kg', 200, 500, '/products/mandioca.png', 3],
+    ['Herbicida — 1L', 40, 950, '/products/alho.png', 2],
+    ['Sementes de Tomate — 1kg', 20, 2200, '/products/tomate.png', 2],
+    ['Irrigação por Gotejamento — Kit', 10, 8500, '/products/milho.png', 1],
+    ['Esterco de Bovino — 30kg', 150, 300, '/products/mandioca.png', 3],
+    ['Saco de Ráfia — 50kg (100un)', 500, 1500, '/products/arroz.png', 1],
+    ['Calcário Agrícola — 40kg', 100, 800, '/products/milho.png', 2],
+    ['Enxada Manual — Cabo Madeira', 60, 450, '/products/feijao.png', 3],
+    ['Pulverizador Costal — 16L', 15, 3800, '/products/tomate.png', 1],
   ];
   for (const i of inputs) insertInput.run(...i);
 
@@ -206,12 +210,14 @@ function seedData(db: Database.Database) {
   `);
 
   const transports = [
-    ['Camião', 'Camião 10 Toneladas — Nampula', 15, 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400', 'Nampula', 3],
-    ['Pick-up', 'Pick-up Toyota Hilux — Monapo', 8, 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=400', 'Monapo', 3],
-    ['Moto', 'Moto de Carga — Nacala', 4, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=400', 'Nacala-Porto', 1],
-    ['Camioneta', 'Camioneta Frigorífica — Nampula', 25, 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400', 'Nampula', 2],
-    ['Camião', 'Camião de Carga — Ribaué', 12, 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&q=80&w=400', 'Ribaué', 3],
-    ['Bicicleta', 'Triciclo de Carga — Angoche', 2, 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=400', 'Angoche', 1],
+    ['Camião', 'Camião 10 Toneladas', 150, '/products/milho.png', 'Nampula', 1],
+    ['Pick-up', 'Pick-up Toyota Hilux', 60, '/products/tomate.png', 'Monapo', 1],
+    ['Moto', 'Moto de Carga', 25, '/products/mandioca.png', 'Meconta', 2],
+    ['Camioneta', 'Camioneta Frigorífica', 180, '/products/papaia.png', 'Nacala', 1],
+    ['Camião', 'Camião de Carga — Ribaué', 140, '/products/milho.png', 'Ribaué', 3],
+    ['Bicicleta', 'Triciclo de Carga — Angoche', 20, '/products/caju.png', 'Angoche', 3],
+    ['Tractor', 'Trator com Reboque', 200, '/products/milho.png', 'Malema', 2],
+    ['Carrinha', 'Carrinha 3.5 Toneladas', 90, '/products/mandioca.png', 'Rapale', 2],
   ];
   for (const t of transports) insertTransport.run(...t);
 
