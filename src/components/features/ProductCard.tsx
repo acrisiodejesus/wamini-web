@@ -42,10 +42,19 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
 
     setContacting(true);
     try {
-      await apiClient.post(`/negotiations`, {
-        product_id: id,
+      const payload: any = {
         messages: [{ body: `Olá! Tenho interesse em "${product.name}". Ainda está disponível?` }],
-      });
+      };
+
+      if (product.item_type === 'input') {
+        payload.input_id = id;
+      } else if (product.item_type === 'transport') {
+        payload.transport_id = id;
+      } else {
+        payload.product_id = id;
+      }
+
+      await apiClient.post(`/negotiations`, payload);
       window.location.href = '/pt/negotiation';
     } catch (err: any) {
       if (err?.response?.status === 401) {
