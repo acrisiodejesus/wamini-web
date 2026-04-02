@@ -9,6 +9,11 @@ const withSerwist = withSerwistInit({
   swDest: 'public/sw.js',
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === 'development',
+  // Exclude problematic chunks that cause 404s during precaching in Next.js App Router
+  exclude: [
+    /\/_next\/static\/chunks\/app\/not-found.*\.js$/,
+    /\/_next\/static\/chunks\/app\/manifest\.webmanifest\/route.*\.js$/,
+  ],
 });
 
 /** @type {import('next').NextConfig} */

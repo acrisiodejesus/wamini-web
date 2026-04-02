@@ -63,7 +63,7 @@ export default function Sidebar() {
                     aria-hidden="true"
                     fill
                     className="object-cover"
-                    sizes="192px"
+                    sizes="(max-width: 768px) 96px, 192px"
                     // Primeira imagem é LCP em desktop — carregar com prioridade
                     priority={index === 0}
                   />
@@ -105,7 +105,7 @@ export default function Sidebar() {
                     aria-hidden="true"
                     fill
                     className="object-cover"
-                    sizes="96px"
+                    sizes="(max-width: 768px) 96px, 192px"
                     priority={index === 0}
                   />
                 </div>
