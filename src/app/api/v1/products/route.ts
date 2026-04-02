@@ -36,17 +36,17 @@ export async function POST(req: NextRequest) {
     const fallbackImages: Record<string, string> = {
       tomate: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400',
       milho: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80&w=400',
-      'feijão': 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400',
-      feijao: 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400',
+      'feijão': 'https://images.unsplash.com/photo-1551462147-37885abb3e4a?auto=format&fit=crop&q=80&w=400',
+      feijao: 'https://images.unsplash.com/photo-1551462147-37885abb3e4a?auto=format&fit=crop&q=80&w=400',
       arroz: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400',
-      mandioca: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&q=80&w=400',
+      mandioca: 'https://images.unsplash.com/photo-1592663510049-36659a349bc6?auto=format&fit=crop&q=80&w=400',
       batata: 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&q=80&w=400',
       amendoim: 'https://images.unsplash.com/photo-1567892320421-4ef5c96e7e49?auto=format&fit=crop&q=80&w=400',
-      caju: 'https://images.unsplash.com/photo-1617576683096-00fc8eecb3af?auto=format&fit=crop&q=80&w=400',
-      gergelim: 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400',
-      soja: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400',
+      caju: 'https://images.unsplash.com/photo-1507005891461-9c60613296c6?auto=format&fit=crop&q=80&w=400',
+      gergelim: 'https://images.unsplash.com/photo-1509358740172-f77c168f6312?auto=format&fit=crop&q=80&w=400',
+      soja: 'https://images.unsplash.com/photo-1599549336111-665e77166160?auto=format&fit=crop&q=80&w=400',
       banana: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&q=80&w=400',
-      papaia: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&q=80&w=400',
+      papaia: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&q=80&w=400',
       default: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=400'
     };
 

@@ -152,16 +152,16 @@ function seedData(db: Database.Database) {
   const products = [
     ['Tomate Vermelho — 50kg', 200, 70, 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nampula', 1],
     ['Milho Branco — 100kg', 500, 45, 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Monapo', 1],
-    ['Feijão Manteiga — 25kg', 150, 120, 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Murrupula', 2],
+    ['Feijão Manteiga — 25kg', 150, 120, 'https://images.unsplash.com/photo-1551462147-37885abb3e4a?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Murrupula', 2],
     ['Arroz Carolino — 50kg', 80, 85, 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nampula', 1],
-    ['Mandioca Fresca — 30kg', 300, 25, 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Meconta', 3],
+    ['Mandioca Fresca — 30kg', 300, 25, 'https://images.unsplash.com/photo-1592663510049-36659a349bc6?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Meconta', 3],
     ['Batata-doce — 20kg', 120, 35, 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Angoche', 2],
     ['Amendoim — 10kg', 400, 95, 'https://images.unsplash.com/photo-1567892320421-4ef5c96e7e49?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Ribaué', 1],
-    ['Caju — 15kg', 60, 150, 'https://images.unsplash.com/photo-1617576683096-00fc8eecb3af?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Memba', 3],
-    ['Gergelim — 5kg', 200, 180, 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Malema', 2],
-    ['Soja — 40kg', 250, 65, 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Rapale', 1],
+    ['Caju — 15kg', 60, 150, 'https://images.unsplash.com/photo-1507005891461-9c60613296c6?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Memba', 3],
+    ['Gergelim — 5kg', 200, 180, 'https://images.unsplash.com/photo-1509358740172-f77c168f6312?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Malema', 2],
+    ['Soja — 40kg', 250, 65, 'https://images.unsplash.com/photo-1599549336111-665e77166160?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Rapale', 1],
     ['Banana Madura — caixa', 90, 40, 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Moma', 3],
-    ['Papaia — 20kg', 70, 30, 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nacala-Porto', 2],
+    ['Papaia — 20kg', 70, 30, 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nacala-Porto', 2],
   ];
   for (const p of products) insertProduct.run(...p);
 
