@@ -124,6 +124,18 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE users ADD COLUMN subscription_plan TEXT DEFAULT "free";'); } catch (e) { }
   try { db.exec('ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT "inactive";'); } catch (e) { }
   try { db.exec('ALTER TABLE users ADD COLUMN subscription_expiry TEXT;'); } catch (e) { }
+
+  // Correcção de imagens de seed antigas (Produção)
+  try {
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1599549336111-665e77166160?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Soja%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Papaia%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1507005891461-9c60613296c6?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Caju%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1592663510049-36659a349bc6?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Mandioca%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1551462147-37885abb3e4a?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Feijão%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1509358740172-f77c168f6312?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Gergelim%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Batata-doce%'").run();
+    db.prepare("UPDATE products SET photo = 'https://images.unsplash.com/photo-1567892320421-4ef5c96e7e49?auto=format&fit=crop&q=80&w=400' WHERE name LIKE 'Amendoim%'").run();
+  } catch (e) { console.error('Migration fix images error:', e); }
 }
 
 // ─── Seed data (só insere se a DB estiver vazia) ──────────────────────────────
