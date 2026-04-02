@@ -6,6 +6,7 @@ import { Product } from '@/types';
 import apiClient, { getToken } from '@/lib/api/client';
 import clsx from 'clsx';
 import { useAuth } from '@/hooks/useAuth';
+import SubscriptionPaywallModal from '@/components/features/SubscriptionPaywallModal';
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +15,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, apiProductId }: ProductCardProps) {
   const [contacting, setContacting] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const { user } = useAuth();
 
   const isMyProduct = user?.id?.toString() === product.seller.id.toString();
@@ -31,8 +33,7 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
 
     const isSubscribed = user.subscription_status === 'active' && user.subscription_plan && user.subscription_plan !== 'free';
     if (!isSubscribed) {
-      alert('⚠️ Acesso restrito! Para negociares e veres os contactos telefónicos, precisas de activar a tua Assinatura (Plano Básico ou superior). Vai ao teu Perfil.');
-      window.location.href = '/pt/profile';
+      setShowPaywall(true);
       return;
     }
 
@@ -132,6 +133,11 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
           )}
         </button>
       </div>
+
+      <SubscriptionPaywallModal 
+        isOpen={showPaywall} 
+        onClose={() => setShowPaywall(false)} 
+      />
     </div>
   );
 }

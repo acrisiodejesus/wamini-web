@@ -151,7 +151,7 @@ function seedData(db: Database.Database) {
 
   const products = [
     ['Tomate Vermelho — 50kg', 200, 70, 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nampula', 1],
-    ['Milho Branco — 100kg', 500, 45, 'https://images.unsplash.com/photo-1601593346740-925612772716?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Monapo', 1],
+    ['Milho Branco — 100kg', 500, 45, 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Monapo', 1],
     ['Feijão Manteiga — 25kg', 150, 120, 'https://images.unsplash.com/photo-1559181567-c3190bef1eb4?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Murrupula', 2],
     ['Arroz Carolino — 50kg', 80, 85, 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Nampula', 1],
     ['Mandioca Fresca — 30kg', 300, 25, 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&q=80&w=400', 'PRODUTOS', 'Meconta', 3],
