@@ -150,7 +150,7 @@ export default function ProfilePage() {
                   <>
                     <h2 className="text-2xl font-bold flex items-center justify-center md:justify-start gap-2">
                       {profile?.name || 'Usuário'}
-                      {isSubActive && <Crown size={18} className="text-yellow-500 fill-yellow-500" title="Assinante Activo" />}
+                      {isSubActive && <span title="Assinante Activo"><Crown size={18} className="text-yellow-500 fill-yellow-500" /></span>}
                     </h2>
                     <p className="text-gray-500 flex items-center justify-center md:justify-start gap-1 mt-1">
                       <MapPin size={16} /> {profile?.localization || 'Sem localização'}
