@@ -28,7 +28,6 @@ interface Message {
   id: number;
   sender_id: number;
   sender_name: string;
-  sender_name: string;
   body: string | null;
   attachment_url?: string | null;
   attachment_type?: string | null;
