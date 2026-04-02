@@ -78,12 +78,23 @@ export function clearToken(): void {
 export function getStoredUser(): any | null {
   if (typeof window === 'undefined') return null;
   const userStr = localStorage.getItem('wamini_user');
-  return userStr ? JSON.parse(userStr) : null;
+  if (!userStr || userStr === 'undefined' || userStr === 'null') return null;
+  
+  try {
+    return JSON.parse(userStr);
+  } catch (err) {
+    console.error('Error parsing stored user:', err);
+    return null;
+  }
 }
 
 export function setStoredUser(user: any): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('wamini_user', JSON.stringify(user));
+  if (user === undefined || user === null) {
+    localStorage.removeItem('wamini_user');
+  } else {
+    localStorage.setItem('wamini_user', JSON.stringify(user));
+  }
 }
 
 export default apiClient;
