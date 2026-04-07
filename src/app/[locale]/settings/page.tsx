@@ -13,9 +13,13 @@ import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import apiClient from '@/lib/api/client';
 import UserReviews from '@/components/features/UserReviews';
 
+import { DISTRICTS } from '@/constants/districts';
+
 const settingsSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
-  localization: z.string().optional(),
+  localization: z.string().min(1, 'Selecione um distrito'),
+  mobile_number: z.string().min(9, 'Número inválido'),
+  role: z.string().min(1),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -24,6 +28,7 @@ export default function SettingsPage() {
   const t = useTranslations('Common');
   const { user, login } = useAuthStore();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -33,20 +38,25 @@ export default function SettingsPage() {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: user?.name || '',
-      localization: user?.email || '', // email field stores localization in authStore
+      localization: (user as any)?.localization || '',
+      mobile_number: (user as any)?.mobile_number || '',
+      role: (user as any)?.role || 'buyer',
     },
   });
 
   const onSubmit = async (data: SettingsForm) => {
+    setError(null);
     try {
-      // Actualizar o utilizador na API
-      await apiClient.put('/users/profile', data);
+      const response = await apiClient.put('/users/profile', data);
+      
+      // Actualizar a store
+      const token = localStorage.getItem('wamini_token') || '';
+      login(response.data, token);
+      
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      // Se não há endpoint PUT ainda, apenas mostrar sucesso na UI
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Erro ao guardar alterações');
     }
   };
 
@@ -56,7 +66,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-gray-50 md:ml-48 pb-20">
         <header className="bg-white p-4 md:p-6 flex justify-between items-center shadow-sm sticky top-0 z-10">
           <div className="flex items-center gap-4">
-            <Link href="/profile" className="md:hidden p-2 -ml-2 rounded-full hover:bg-gray-100">
+            <Link href="/market" className="md:hidden p-2 -ml-2 rounded-full hover:bg-gray-100">
               <ArrowLeft size={24} />
             </Link>
             <h1 className="text-2xl md:text-3xl font-black logo-wamini">Wamini</h1>
@@ -67,37 +77,47 @@ export default function SettingsPage() {
         <div className="max-w-2xl mx-auto p-4 md:p-8">
           <h2 className="text-2xl font-bold mb-6">Configurações da Conta</h2>
 
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6 overflow-hidden">
             <h3 className="text-lg font-semibold mb-4">Dados Pessoais</h3>
             
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                <input
-                  {...register('name')}
-                  className="w-full"
-                />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                  <input {...register('name')} className="w-full" />
+                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Número de Telefone</label>
+                  <input {...register('mobile_number')} className="w-full" />
+                  {errors.mobile_number && <p className="text-red-500 text-xs mt-1">{errors.mobile_number.message}</p>}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Distrito / Localização</label>
-                <input
-                  {...register('localization')}
-                  placeholder="Ex: Nampula"
-                  className="w-full"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Distrito / Localização</label>
+                  <select {...register('localization')} className="w-full">
+                    {DISTRICTS.sort().map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  {errors.localization && <p className="text-red-500 text-xs mt-1">{errors.localization.message}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Papel no Mercado</label>
+                  <select {...register('role')} className="w-full">
+                    <option value="buyer">Comprador</option>
+                    <option value="farmer">Produtor / Agricultor</option>
+                    <option value="seller">Vendedor de Insumos</option>
+                    <option value="transporter">Transportador</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Telefone</label>
-                <input
-                  value={user?.name ? '–– (altere no registo) ––' : ''}
-                  disabled
-                  className="w-full opacity-50 cursor-not-allowed bg-gray-50"
-                />
-                <p className="text-xs text-gray-400 mt-1">O número de telefone não pode ser alterado</p>
-              </div>
+              {error && (
+                <p className="text-red-600 font-medium text-sm">{error}</p>
+              )}
 
               {saved && (
                 <p className="text-green-600 font-medium text-sm">✓ Configurações guardadas!</p>

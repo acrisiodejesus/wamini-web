@@ -5,7 +5,7 @@ import { getAuthPayload, apiError, apiOk } from '@/lib/auth';
 export async function GET(req: NextRequest) {
   try {
     const payload = await getAuthPayload(req);
-    if (!payload) return apiError('Não autenticado', 401);
+    if (!payload?.userId) return apiError('Utilizador não vinculado à base de dados local', 403);
 
     const db = getDb();
     

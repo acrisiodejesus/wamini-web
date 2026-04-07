@@ -79,69 +79,24 @@ export default function LoginPage() {
           <h2 className="text-3xl font-black text-gray-900 mb-1">{t('auth.login_title')}</h2>
           <p className="text-gray-500 mb-8 text-sm">{t('auth.login_subtitle')}</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+          <div className="space-y-6">
+            <p className="text-gray-700 font-medium">
+              A Wamini utiliza agora o sistema de autenticação segura **Auth0**.
+              Clique no botão abaixo para entrar com a sua conta.
+            </p>
 
-            {/* Mobile Number */}
-            <div>
-              <label htmlFor="mobile_number" className="block text-sm font-bold text-gray-700 mb-1">
-                {t('auth.phone_label')}
-              </label>
-              <div className="relative">
-                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  id="mobile_number"
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder={t('auth.phone_placeholder')}
-                  className="w-full input-icon-left"
-                  {...register('mobile_number')}
-                />
-              </div>
-              {errors.mobile_number && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {t('auth.phone_label')}
-                </p>
-              )}
+            <a 
+              href="/api/auth/login" 
+              className="btn-gradient w-full py-4 text-base font-bold flex items-center justify-center gap-2"
+            >
+              <Lock size={20} />
+              {t('auth.login_title')} com Auth0
+            </a>
+
+            <div className="pt-4 border-t border-gray-100 italic text-xs text-gray-400">
+              * Ao entrar, a sua conta será automaticamente vinculada ao nosso mercado.
             </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-1">
-                {t('auth.password_label')}
-              </label>
-              <div className="relative">
-                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder={t('auth.password_placeholder')}
-                  className="w-full input-icon-left"
-                  {...register('password')}
-                />
-              </div>
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {t('auth.password_label')}
-                </p>
-              )}
-            </div>
-
-            {/* API Error */}
-            {apiError && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm flex items-center gap-2"
-              >
-                <AlertCircle size={16} /> {apiError}
-              </motion.div>
-            )}
-
-            <button type="submit" disabled={isSubmitting} className="btn-gradient w-full py-4 text-base">
-              {isSubmitting ? t('auth.signing_in') : t('auth.login_title')}
-            </button>
-          </form>
+          </div>
 
           <div className="mt-6 text-center space-y-3">
             <p className="text-sm text-gray-600">
@@ -158,9 +113,6 @@ export default function LoginPage() {
               >
                 {t('register')}
               </Link>
-            </p>
-            <p className="text-xs text-gray-400">
-              <Link href="/auth/login" className="hover:underline">{t('auth.forgot_password')}</Link>
             </p>
           </div>
         </motion.div>

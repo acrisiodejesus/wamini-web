@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import MarketFilters from '@/components/features/MarketFilters';
 import ProductCard from '@/components/features/ProductCard';
 import Sidebar from '@/components/layout/Sidebar';
-import { Link } from '@/i18n/routing';
+import { Link, useRouter } from '@/i18n/routing';
 import { Settings } from 'lucide-react';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import NotificationsDropdown from '@/components/features/NotificationsDropdown';
@@ -14,6 +14,8 @@ import { Loader2 } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
 import { useTranslations } from 'next-intl';
 import AdvertiseModal from '@/components/features/AdvertiseModal';
+import { useAuthStore } from '@/stores/authStore';
+import { useEffect } from 'react';
 
 // Adapter function to convert API Product to UI Product
 function adaptApiProduct(apiProduct: any): Product {
@@ -37,8 +39,22 @@ function adaptApiProduct(apiProduct: any): Product {
 }
 
 
+
 export default function MarketPage() {
   const t = useTranslations('common');
+  const router = useRouter();
+  const { user } = useAuthStore();
+  
+  // Perfil incompleto: redirecionar para onboarding
+  useEffect(() => {
+    if (user) {
+      const isIncomplete = (user as any).mobile_number?.startsWith('auth0_') || !(user as any).localization;
+      if (isIncomplete) {
+        router.push('/auth/complete-profile');
+      }
+    }
+  }, [user, router]);
+
   const [activeCategory, setActiveCategory] = useState('Tudo');
   const [isAdvertiseModalOpen, setIsAdvertiseModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

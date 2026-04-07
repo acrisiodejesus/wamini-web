@@ -15,6 +15,7 @@ const withSerwist = withSerwistInit({
     /\/_next\/static\/css\/.*\.css$/,
     /\/_next\/static\/.*\/_ssgManifest\.js$/,
     /\/_next\/static\/.*\/_buildManifest\.js$/,
+    /\.map$/,
   ],
 });
 

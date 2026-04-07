@@ -136,137 +136,26 @@ export default function RegisterPage() {
           <h2 className="text-3xl font-black text-gray-900 mb-1">{t('auth.register_title')}</h2>
           <p className="text-gray-500 mb-8 text-sm">{t('auth.register_subtitle')}</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+          <div className="space-y-6">
+            <p className="text-gray-700 font-medium">
+              Crie a sua conta de forma segura através do **Auth0**. 
+              Poderá escolher entre e-mail/palavra-passe ou redes sociais.
+            </p>
 
-            {/* ── Role selector ── */}
-            <div>
-              <p className="text-sm font-bold text-gray-700 mb-2">{t('auth.role_prompt')}</p>
-              <div className="grid grid-cols-2 gap-3">
-                {(Object.entries(ROLE_ICONS) as Array<[keyof typeof ROLE_ICONS, typeof ROLE_ICONS[keyof typeof ROLE_ICONS]]>).map(([key, { Icon, color, bg }]) => {
-                  const active = roleValue === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => handleRoleSelect(key)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm font-bold transition-all duration-200"
-                      style={{
-                        background: active ? bg : '#fff',
-                        borderColor: active ? color : '#E5E7EB',
-                        color: active ? color : '#6B7280',
-                        transform: active ? 'scale(1.04)' : 'scale(1)',
-                      }}
-                    >
-                      <Icon size={24} strokeWidth={1.8} />
-                      {t(`auth.roles.${key}`)}
-                    </button>
-                  );
-                })}
-              </div>
-              <input type="hidden" {...register('role')} />
-              {errors.role && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} /> {t('auth.role_prompt')}
-                </p>
-              )}
+            <a 
+              href="/api/auth/login?screen_hint=signup" 
+              className="btn-gradient w-full py-4 text-base font-bold flex items-center justify-center gap-2"
+            >
+              <Users size={20} />
+              Criar conta com Auth0
+            </a>
+
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+              <p className="text-xs text-amber-800">
+                <strong>Nota:</strong> Após o registo, poderá completar o seu perfil (distrito, telefone e papel no mercado) na sua área de utilizador.
+              </p>
             </div>
-
-            {/* ── Fields revealed after role selection ── */}
-            <AnimatePresence>
-              {roleValue && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.35 }}
-                  className="space-y-4 overflow-hidden"
-                >
-                  {/* Name */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.name_label')}</label>
-                    <div className="relative">
-                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="text" placeholder={t('auth.name_placeholder')} className="w-full input-icon-left" {...register('name')} />
-                    </div>
-                    {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.name_label')}</p>}
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.phone_label')}</label>
-                    <div className="relative">
-                      <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="tel" placeholder={t('auth.phone_placeholder')} className="w-full input-icon-left" {...register('phone')} />
-                    </div>
-                    {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.phone_label')}</p>}
-                  </div>
-
-                  {/* District */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.district_label')}</label>
-                    <div className="relative">
-                      <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <select className="w-full input-icon-left appearance-none" defaultValue="" {...register('localization')}>
-                        <option value="" disabled>{t('auth.district_placeholder')}</option>
-                        {DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </div>
-                    {errors.localization && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.district_label')}</p>}
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.password_label')}</label>
-                    <div className="relative">
-                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="password" placeholder={t('auth.password_placeholder')} className="w-full input-icon-left" {...register('password')} />
-                    </div>
-                    {errors.password && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.password_label')}</p>}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">{t('auth.confirm_password_label')}</label>
-                    <div className="relative">
-                      <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="password" placeholder={t('auth.confirm_password_placeholder')} className="w-full input-icon-left" {...register('confirmPassword')} />
-                    </div>
-                    {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12} />{t('auth.confirm_password_label')}</p>}
-                  </div>
-
-                  {/* Terms */}
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="terms"
-                      className="mt-1 w-5 h-5 rounded border-2 border-black flex-shrink-0"
-                      {...register('terms')}
-                    />
-                    <label htmlFor="terms" className="text-sm text-gray-700 leading-snug">
-                      {t('auth.terms_label')}
-                    </label>
-                  </div>
-                  {errors.terms && <p className="text-red-500 text-xs flex items-center gap-1"><AlertCircle size={12} />{t('auth.terms_label')}</p>}
-
-                  {/* API Error */}
-                  {apiError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm flex items-center gap-2"
-                    >
-                      <AlertCircle size={16} /> {apiError}
-                    </motion.div>
-                  )}
-
-                  {/* Submit */}
-                  <button type="submit" disabled={isLoading} className="btn-gradient w-full py-4 text-base">
-                    {isLoading ? t('auth.creating') : t('register')}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </form>
+          </div>
 
           <p className="mt-6 text-sm text-center text-gray-600">
             {t('auth.have_account')}{' '}

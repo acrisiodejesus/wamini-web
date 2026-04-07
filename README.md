@@ -1,5 +1,4 @@
-# 🌾 Wamini: AgriTech Marketplace Platform
-
+[![CI/CD Configured](https://img.shields.io/badge/CI%2FCD-Configured-success?style=for-the-badge&logo=githubactions&logoColor=white)]()
 [![Framework](https://img.shields.io/badge/Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)]()
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)]()
@@ -60,6 +59,12 @@ A hidden, multi-layer protected **Admin Dashboard** (`/admin`) allows authorized
 - Monitor real-time system audit logs.
 - Manage and restore soft-deleted records.
 - Enforce market integrity through a dedicated server-side role validation system (bypassing client-side spoofing).
+
+### 7. Automated CI/CD & Production Infrastructure
+Wamini follows a modern, cloud-agnostic deployment strategy.
+- **Coolify Integration:** Every push to the `main` branch triggers an automated build and deployment through a self-hosted Coolify instance.
+- **Nixpacks Engine:** Utilizes the Nixpacks build system for zero-config, OCI-compliant container generation, ensuring perfect parity between development and production environments.
+- **Zero-Downtime Rebuilds:** The pipeline includes automatic Health Checks and Rollback procedures to maintain 100% availability during updates.
 
 ---
 
