@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 import { z } from 'zod';
-import DOMPurify from 'isomorphic-dompurify';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getAuthPayload, apiError, apiOk } from '@/lib/auth';
 import { getDb } from '@/lib/db';
@@ -39,6 +38,9 @@ export async function PUT(req: NextRequest, { params }: { params: any }) {
 
     const rawBody = await req.json();
     const data = updateSchema.parse(rawBody);
+
+    // Dynamic import for DOMPurify to avoid build-time jsdom crash
+    const DOMPurify = (await import('isomorphic-dompurify')).default;
     const safeComment = data.comment ? DOMPurify.sanitize(data.comment) : null;
 
     db.prepare(`
