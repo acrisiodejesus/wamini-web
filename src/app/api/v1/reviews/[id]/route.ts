@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { z } from 'zod';
 import DOMPurify from 'isomorphic-dompurify';
 import { checkRateLimit } from '@/lib/rate-limit';
