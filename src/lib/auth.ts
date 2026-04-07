@@ -18,7 +18,13 @@ export async function getAuthPayload(req?: NextRequest) {
     }
   }
 
-  const session = await getSession();
+  let session;
+  try {
+    session = await getSession();
+  } catch (err) {
+    console.error('[Auth] Error getting session:', err);
+    return null;
+  }
   if (!session || !session.user) return null;
 
   const sub = session.user.sub;

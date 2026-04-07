@@ -6,17 +6,35 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-// Em produção usar /data (volume Coolify), em dev usar a raiz do projecto
-const DATA_DIR =
-  process.env.NODE_ENV === 'production'
-    ? '/data'
-    : path.join(process.cwd(), '.db');
+// Em produção, tentar primeiro /data (volume Coolify). 
+// Se falhar (ex: sem permissões na root), usar ./data no directório do projecto para evitar 500s.
+function getWritableDir() {
+  const primaryDir = '/data';
+  const fallbackDir = path.join(process.cwd(), 'data');
 
-// Criar directório se não existir
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (process.env.NODE_ENV !== 'production') {
+    return path.join(process.cwd(), '.db');
+  }
+
+  try {
+    if (!fs.existsSync(primaryDir)) {
+      fs.mkdirSync(primaryDir, { recursive: true });
+    }
+    // Test write permission
+    const testFile = path.join(primaryDir, '.write-test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    return primaryDir;
+  } catch (e) {
+    console.warn(`[DB] /data não é acessível ou não existe volume montado. A usar fallback: ${fallbackDir}`, (e as any).message);
+    if (!fs.existsSync(fallbackDir)) {
+      fs.mkdirSync(fallbackDir, { recursive: true });
+    }
+    return fallbackDir;
+  }
 }
 
+const DATA_DIR = getWritableDir();
 const DB_PATH = path.join(DATA_DIR, 'wamini.db');
 
 // Singleton para reutilizar a ligação

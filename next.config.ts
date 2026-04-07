@@ -41,8 +41,8 @@ const nextConfig = {
   output: 'standalone',
   // Garante que URLs terminem em / para SEO e rotas do next-intl
   trailingSlash: true,
-  // Evita erro de build com jsdom/isomorphic-dompurify (Next.js 15 top-level)
-  serverExternalPackages: ['isomorphic-dompurify', 'jsdom'],
+  // Evita erro de build com native modules no Next.js 15
+  serverExternalPackages: ['isomorphic-dompurify', 'jsdom', 'better-sqlite3'],
 
   // Ignora erros de lint/tipagem no build de produção para garantir deploy rápido
   eslint: {
