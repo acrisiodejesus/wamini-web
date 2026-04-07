@@ -1,6 +1,15 @@
-import { getSession } from '@auth0/nextjs-auth0';
+import { auth0 } from '@/lib/auth0';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
+
+// DIAGNÓSTICO: Validar variaveis de ambiente na inicialização (Produção)
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.AUTH0_ISSUER_BASE_URL) {
+    console.error('[CRITICAL] AUTH0_ISSUER_BASE_URL não está definida no ambiente!');
+  } else if (!process.env.AUTH0_ISSUER_BASE_URL.startsWith('https://')) {
+    console.error('[CRITICAL] AUTH0_ISSUER_BASE_URL deve começar com https://. Valor actual:', process.env.AUTH0_ISSUER_BASE_URL);
+  }
+}
 
 /**
  * Função utilitária para verificar se existe uma sessão Auth0 válida 
@@ -20,7 +29,7 @@ export async function getAuthPayload(req?: NextRequest) {
 
   let session;
   try {
-    session = await getSession();
+    session = await auth0.getSession();
   } catch (err) {
     console.error('[Auth] Error getting session:', err);
     return null;
