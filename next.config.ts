@@ -39,8 +39,8 @@ const nextConfig = {
 
   // ── Deployment ────────────────────────────────────────────────────────
   output: 'standalone',
-  // Garante que URLs terminem em / para SEO e rotas do next-intl
-  trailingSlash: true,
+  // Desactivado para evitar problemas com Auth0/API redirects
+  trailingSlash: false,
   // Evita erro de build com native modules no Next.js 15
   serverExternalPackages: ['isomorphic-dompurify', 'jsdom', 'better-sqlite3'],
 
