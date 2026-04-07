@@ -41,7 +41,7 @@ const nextConfig = {
   // Garante que URLs terminem em / para SEO e rotas do next-intl
   trailingSlash: true,
   // Evita erro de build com jsdom/isomorphic-dompurify (Next.js 15 top-level)
-  serverExternalPackages: ['isomorphic-dompurify'],
+  serverExternalPackages: ['isomorphic-dompurify', 'jsdom'],
 
   // ── Compressão ───────────────────────────────────────────────────────────
   compress: true,
