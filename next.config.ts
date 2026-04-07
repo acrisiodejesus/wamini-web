@@ -41,8 +41,8 @@ const nextConfig = {
   output: 'standalone',
   // Desactivado para evitar problemas com Auth0/API redirects
   trailingSlash: false,
-  // Evita erro de build com native modules no Next.js 15
-  serverExternalPackages: ['isomorphic-dompurify', 'jsdom', 'better-sqlite3'],
+  // Módulos nativos e externos que não devem ser bundled pelo Next.js 15
+  serverExternalPackages: ['better-sqlite3'],
 
   // Ignora erros de lint/tipagem no build de produção para garantir deploy rápido
   eslint: {

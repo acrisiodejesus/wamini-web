@@ -7,6 +7,8 @@ export const GET = auth0.handleAuth({
       const screen_hint = url.searchParams.get('screen_hint');
 
       return {
+        // Redireccionar sempre para o mercado após login bem-sucedido
+        returnTo: '/market',
         authorizationParams: {
           screen_hint: screen_hint || undefined,
         },
