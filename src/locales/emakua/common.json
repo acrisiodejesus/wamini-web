@@ -74,7 +74,7 @@
       "cta_register": "Jiandikishe bure",
       "profiles": {
         "farmer_title": "Wakulima",
-        "farmer_desc": "Uza mazao yako moja kwa moja sokoni kwa bei nzuri.",
+        "farmer_desc": "Uza mazao yako moja kwa moja sokoni para bei nzuri.",
         "transporter_title": "Wasafirishaji",
         "transporter_desc": "Pata mizigo na uongeze matumizi ya magari yako.",
         "seller_title": "Wauza Pembejeo",
@@ -94,6 +94,10 @@
       "login_failed": "Kuingia kumeshindwa. Jaribu tena.",
       "phone_taken": "Nambari hii ya simu imesajiliwa tayari. Jaribu kuingia.",
       "generic": "Hitilafu imetokea. Jaribu tena."
+    },
+    "cookies": {
+      "message": "Ninnaapharihela cookies okhala soko yooreera.",
+      "accept": "Accepted"
     }
   }
 }

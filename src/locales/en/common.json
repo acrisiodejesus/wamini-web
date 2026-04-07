@@ -94,6 +94,10 @@
       "login_failed": "Sign in failed. Please try again.",
       "phone_taken": "This phone number is already registered. Try signing in.",
       "generic": "An error occurred. Please try again."
+    },
+    "cookies": {
+      "message": "We use cookies to ensure the best market experience.",
+      "accept": "Accept"
     }
   }
 }

@@ -94,6 +94,10 @@
       "login_failed": "Erro ao entrar. Tente novamente.",
       "phone_taken": "Este número já está registado. Tente fazer login.",
       "generic": "Erro inesperado. Tente novamente."
+    },
+    "cookies": {
+      "message": "Usamos cookies para garantir a melhor experiência no mercado.",
+      "accept": "Aceitar"
     }
   }
 }
