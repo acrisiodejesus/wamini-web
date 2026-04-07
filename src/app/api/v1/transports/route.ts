@@ -3,16 +3,29 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAuthPayload, apiError, apiOk } from '@/lib/auth';
+import { recordAuditLog } from '@/lib/audit';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const payload = await getAuthPayload(req);
     const db = getDb();
     const transports = db.prepare(
       `SELECT t.*, u.name as owner_name
        FROM transports t
        LEFT JOIN users u ON t.user_id = u.id
+       WHERE t.deleted_at IS NULL
        ORDER BY t.created_at DESC`
     ).all();
+
+    // COMPLIANCE: Audit read access
+    recordAuditLog(db, req, {
+      actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
+      action: 'ACCESS',
+      entity_type: 'transports_list',
+      entity_id: null,
+      new_data: { count: transports.length }
+    });
+
     return apiOk(transports);
   } catch (err: any) {
     console.error('Transports GET error:', err);
@@ -50,14 +63,27 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb();
+    const actorId = (payload as any)._testLocalId || (payload as any).userId;
     const result = db.prepare(`
       INSERT INTO transports (transport_type, name, price_per_km, photo, location, user_id)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(transport_type, name, price_per_km, finalPhoto, location ?? null, payload.userId);
+    `).run(transport_type, name, price_per_km, finalPhoto, location ?? null, actorId);
 
-    return apiOk({ message: 'Transporte criado com sucesso', transport_id: result.lastInsertRowid }, 201);
+    const transportId = result.lastInsertRowid;
+
+    // COMPLIANCE: Audit creation
+    recordAuditLog(db, req, {
+      actor_id: actorId,
+      action: 'CREATE',
+      entity_type: 'transports',
+      entity_id: Number(transportId),
+      new_data: { name, transport_type, price_per_km }
+    });
+
+    return apiOk({ message: 'Transporte criado com sucesso', transport_id: transportId }, 201);
   } catch (err: any) {
     console.error('Transports POST error:', err);
     return apiError('Erro interno do servidor', 500);
   }
 }
+

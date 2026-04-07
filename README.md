@@ -28,6 +28,8 @@ Building a multi-sided marketplace requires a robust frontend that can handle dy
 * **Progressive Web App (PWA):** Serwist (Offline support & caching strategies)
 * **Internationalization:** `next-intl` (Supporting Portuguese and local dialects like Emakua)
 * **Testing:** Playwright (End-to-End Testing)
+* **Data Persistence:** Better-SQLite3 (Fast, local SQLite persistence for audit and recovery) Only for MVP
+* **Security & Compliance:** Zero-Trust Audit Logging & Admin Management.
 
 ---
 
@@ -47,6 +49,17 @@ Built-in support for multiple languages including Portuguese (pt-PT) and local d
 
 ### 4. High-Performance & Automated E2E Testing
 Leveraging Next.js server components and React Query edge-caching to fetch listings instantly. The critical user flows (like product browsing and authentication) are guarded by **Playwright E2E tests**, ensuring zero-regression deployments.
+
+### 5. Zero-Trust Compliance & Fraud-Proof Audit
+Wamini implements an industrial-grade compliance layer where **nothing is ever truly deleted**. 
+- **Soft-Deletes:** All entities (products, negotiations, messages) use `deleted_at` timestamps, ensuring full data recovery and historical integrity.
+- **Immutable Audit Log:** Every system interaction (ACCESS, CREATE, UPDATE, DELETE) is cryptographically recorded in a centralized audit table, capturing actor identity, IP address, and JSON snapshots of data states (old vs new).
+
+### 6. Secure Admin Intelligence
+A hidden, multi-layer protected **Admin Dashboard** (`/admin`) allows authorized personnel to:
+- Monitor real-time system audit logs.
+- Manage and restore soft-deleted records.
+- Enforce market integrity through a dedicated server-side role validation system (bypassing client-side spoofing).
 
 ---
 

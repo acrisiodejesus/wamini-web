@@ -3,7 +3,6 @@
 // (volume persistente no Coolify) ou na raiz do projecto em dev.
 
 import Database from 'better-sqlite3';
-import bcrypt from 'bcryptjs';
 import path from 'path';
 import fs from 'fs';
 
@@ -48,21 +47,23 @@ function initSchema(db: Database.Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      name        TEXT    NOT NULL,
+      name        TEXT    NOT NULL CHECK(length(name) <= 255),
       mobile_number TEXT  NOT NULL UNIQUE,
-      password_hash TEXT  NOT NULL,
+      auth0_sub   TEXT    UNIQUE,
       localization TEXT,
       photo       TEXT,
       role        TEXT    DEFAULT 'buyer',
       subscription_plan   TEXT    DEFAULT 'free',
       subscription_status TEXT    DEFAULT 'inactive',
       subscription_expiry TEXT,
-      created_at  TEXT    DEFAULT (datetime('now'))
+      created_at  TEXT    DEFAULT (datetime('now')),
+      updated_at  TEXT    DEFAULT (datetime('now')),
+      deleted_at  TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS products (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      name         TEXT    NOT NULL,
+      name         TEXT    NOT NULL CHECK(length(name) <= 255),
       quantity     REAL    NOT NULL DEFAULT 0,
       price        REAL    NOT NULL,
       photo        TEXT,
@@ -70,29 +71,35 @@ function initSchema(db: Database.Database) {
       location     TEXT,
       publish_date TEXT    DEFAULT (date('now')),
       user_id      INTEGER NOT NULL REFERENCES users(id),
-      created_at   TEXT    DEFAULT (datetime('now'))
+      created_at   TEXT    DEFAULT (datetime('now')),
+      updated_at   TEXT    DEFAULT (datetime('now')),
+      deleted_at   TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS inputs (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      name         TEXT    NOT NULL,
+      name         TEXT    NOT NULL CHECK(length(name) <= 255),
       quantity     REAL    NOT NULL DEFAULT 0,
       price        REAL    NOT NULL,
       photo        TEXT,
       publish_date TEXT    DEFAULT (date('now')),
       user_id      INTEGER NOT NULL REFERENCES users(id),
-      created_at   TEXT    DEFAULT (datetime('now'))
+      created_at   TEXT    DEFAULT (datetime('now')),
+      updated_at   TEXT    DEFAULT (datetime('now')),
+      deleted_at   TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS transports (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      transport_type TEXT    NOT NULL,
-      name           TEXT    NOT NULL,
+      transport_type TEXT    NOT NULL CHECK(length(transport_type) <= 50),
+      name           TEXT    NOT NULL CHECK(length(name) <= 255),
       price_per_km   REAL    NOT NULL,
       photo          TEXT,
       location       TEXT,
       user_id        INTEGER NOT NULL REFERENCES users(id),
-      created_at     TEXT    DEFAULT (datetime('now'))
+      created_at     TEXT    DEFAULT (datetime('now')),
+      updated_at     TEXT    DEFAULT (datetime('now')),
+      deleted_at     TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS negotiations (
@@ -102,32 +109,74 @@ function initSchema(db: Database.Database) {
       product_id   INTEGER REFERENCES products(id),
       input_id     INTEGER REFERENCES inputs(id),
       transport_id INTEGER REFERENCES transports(id),
-      created_at   TEXT    DEFAULT (datetime('now'))
+      status       TEXT    DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'cancelled')),
+      created_at   TEXT    DEFAULT (datetime('now')),
+      updated_at   TEXT    DEFAULT (datetime('now')),
+      deleted_at   TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS messages (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       negotiation_id INTEGER NOT NULL REFERENCES negotiations(id),
       sender_id      INTEGER NOT NULL REFERENCES users(id),
-      body           TEXT,
+      body           TEXT    CHECK(length(body) <= 1000),
       attachment_url TEXT,
       attachment_type TEXT,
       is_read        INTEGER DEFAULT 0,
-      timestamp      TEXT    DEFAULT (datetime('now'))
+      timestamp      TEXT    DEFAULT (datetime('now')),
+      deleted_at     TEXT    DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS prices (
       id       INTEGER PRIMARY KEY AUTOINCREMENT,
-      product  TEXT    NOT NULL,
+      product  TEXT    NOT NULL CHECK(length(product) <= 255),
       price    TEXT    NOT NULL,
       unit     TEXT    NOT NULL DEFAULT 'MT/kg',
       location TEXT    NOT NULL,
       date     TEXT    NOT NULL,
-      trend    TEXT    DEFAULT 'stable'
+      trend    TEXT    DEFAULT 'stable',
+      created_at TEXT  DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reviewer_id INTEGER NOT NULL REFERENCES users(id),
+      target_id INTEGER NOT NULL REFERENCES users(id),
+      negotiation_id INTEGER NOT NULL REFERENCES negotiations(id),
+      rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+      comment TEXT CHECK(length(comment) <= 300),
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      deleted_at TEXT DEFAULT NULL,
+      CHECK (reviewer_id != target_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      actor_id     INTEGER REFERENCES users(id),
+      action       TEXT    NOT NULL, -- 'CREATE', 'UPDATE', 'SOFT_DELETE', 'ACCESS'
+      entity_type  TEXT    NOT NULL, -- 'products', 'negotiations', 'users', etc.
+      entity_id    INTEGER,
+      method       TEXT    NOT NULL, -- 'POST', 'PUT', 'DELETE', 'GET'
+      endpoint     TEXT    NOT NULL,
+      old_data     TEXT,             -- JSON string of previous state (null for CREATE)
+      new_data     TEXT,             -- JSON string of new state (null for DELETE)
+      ip_address   TEXT,
+      user_agent   TEXT,
+      created_at   TEXT    DEFAULT (datetime('now'))
+    );
+
   `);
 
   // Migrações em tempo real para tabelas existentes
+  const tables = ['users', 'products', 'inputs', 'transports', 'negotiations', 'reviews'];
+  for (const table of tables) {
+    try { db.exec(`ALTER TABLE ${table} ADD COLUMN updated_at TEXT DEFAULT (datetime('now'));`); } catch (e) {}
+    try { db.exec(`ALTER TABLE ${table} ADD COLUMN deleted_at TEXT DEFAULT NULL;`); } catch (e) {}
+  }
+  try { db.exec("ALTER TABLE messages ADD COLUMN deleted_at TEXT DEFAULT NULL;"); } catch (e) {}
+  try { db.exec("ALTER TABLE prices ADD COLUMN created_at TEXT DEFAULT (datetime('now'));"); } catch (e) {}
+
   try { db.exec('ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0;'); } catch (e) { /* Coluna já existe */ }
   try { db.exec('ALTER TABLE messages ADD COLUMN attachment_url TEXT;'); } catch (e) { /* Coluna já existe */ }
   try { db.exec('ALTER TABLE messages ADD COLUMN attachment_type TEXT;'); } catch (e) { /* Coluna já existe */ }
@@ -157,17 +206,15 @@ function seedData(db: Database.Database) {
   const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c;
   if (userCount > 0) return; // Já foi initializada
 
-  // Utilizadores demo — password "demo123" gerada com bcrypt em runtime
-  const demoHash = bcrypt.hashSync('demo123', 10);
-
+  // Utilizadores demo — mapeamento manual para Auth0 sub mocks
   const insertUser = db.prepare(`
-    INSERT INTO users (name, mobile_number, password_hash, localization, role)
+    INSERT INTO users (name, mobile_number, auth0_sub, localization, role)
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  insertUser.run('Armando Maputo', '841234567', demoHash, 'Nampula', 'farmer');
-  insertUser.run('Maria da Graça', '879876543', demoHash, 'Monapo', 'buyer');
-  insertUser.run('João Transportes', '862345678', demoHash, 'Nacala-Porto', 'transporter');
+  insertUser.run('Armando Maputo', '841234567', 'auth0|mock_user_1', 'Nampula', 'farmer');
+  insertUser.run('Maria da Graça', '879876543', 'auth0|mock_user_2', 'Monapo', 'buyer');
+  insertUser.run('João Transportes', '862345678', 'auth0|mock_user_3', 'Nacala-Porto', 'transporter');
 
   // Produtos agrícolas
   const insertProduct = db.prepare(`
@@ -256,10 +303,10 @@ function seedData(db: Database.Database) {
   ];
   for (const p of prices) insertPrice.run(...p);
 
-  // Uma negociação de exemplo
+  // Uma negociação de exemplo (pendente)
   const negId = db.prepare(`
-    INSERT INTO negotiations (buyer_id, seller_id, product_id)
-    VALUES (?, ?, ?)
+    INSERT INTO negotiations (buyer_id, seller_id, product_id, status)
+    VALUES (?, ?, ?, 'pending')
   `).run(2, 1, 1).lastInsertRowid;
 
   db.prepare(`
@@ -271,4 +318,16 @@ function seedData(db: Database.Database) {
     INSERT INTO messages (negotiation_id, sender_id, body)
     VALUES (?, ?, ?)
   `).run(negId, 1, 'Bom dia! Sim, ainda tenho stock. Posso vender 50kg a 65 MT/kg.');
+
+  // Uma negociação concluída para TDD e testes do Review zero-trust
+  const completedNegId = db.prepare(`
+    INSERT INTO negotiations (buyer_id, seller_id, product_id, status)
+    VALUES (?, ?, ?, 'completed')
+  `).run(1, 2, 2).lastInsertRowid;
+
+  db.prepare(`
+    INSERT INTO messages (negotiation_id, sender_id, body)
+    VALUES (?, ?, ?)
+  `).run(completedNegId, 1, 'Vou comprar o milho.');
+
 }

@@ -1,44 +1,23 @@
-// ─── JWT Auth helpers ─────────────────────────────────────────────────────────
-import { SignJWT, jwtVerify } from 'jose';
+import { getSession } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'wamini-secret-change-in-production-2024'
-);
-
-const EXPIRY = '7d';
-
-export interface JwtPayload {
-  userId: number;
-  mobile_number: string;
-}
-
-export async function signToken(payload: JwtPayload): Promise<string> {
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(EXPIRY)
-    .sign(JWT_SECRET);
-}
-
-export async function verifyToken(token: string): Promise<JwtPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as unknown as JwtPayload;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Extrai e valida o token do header Authorization de um Request.
- * Devolve o payload ou null se inválido.
+ * Função utilitária para verificar se existe uma sessão Auth0 válida 
+ * em chamadas Edge/API de forma segura.
+ * Se nula, o chamador deve disparar 401.
  */
-export async function getAuthPayload(req: NextRequest): Promise<JwtPayload | null> {
-  const auth = req.headers.get('Authorization') ?? '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return null;
-  return verifyToken(token);
+export async function getAuthPayload(req?: NextRequest) {
+  // Test Backdoor ONLY for Playwright Pentests
+  if (req && process.env.NODE_ENV !== 'production') {
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader === 'Bearer TEST_TOKEN_USER_1') return { sub: 'auth0|mock_user_1', _testLocalId: 1 };
+  }
+
+  const session = await getSession();
+  if (!session || !session.user) return null;
+  
+  // session.user devolve as claims mapeadas do Auth0 sub (o Id externo)
+  return session.user;
 }
 
 /** Resposta de erro JSON padrão */

@@ -50,3 +50,11 @@ playwright/.cache/
 *.db
 *.db-wal
 *.db-shm
+
+# development / scratch files
+*.log
+/data/
+verify_compliance.ts
+run_migration.js
+promote_admin.js
+!.env.example

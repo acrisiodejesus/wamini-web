@@ -3,6 +3,7 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAuthPayload, apiError, apiOk } from '@/lib/auth';
+import { recordAuditLog } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,23 +11,27 @@ export async function GET(req: NextRequest) {
     const categoryQuery = searchParams.get('category') || 'Tudo';
     const search = searchParams.get('search') || '';
 
+    const payload = await getAuthPayload(req);
     const db = getDb();
     
-    // Base subqueries with unified columns and unique IDs
+    // Base subqueries with unified columns and unique IDs - Filtering deleted items
     const productBase = `
       SELECT ('product_' || p.id) as id, p.name as name, p.quantity as quantity, p.price as price, p.photo as photo, p.category as category, p.location as location, 'product' as item_type, u.name as seller_name, p.created_at as created_at
       FROM products p
       LEFT JOIN users u ON p.user_id = u.id
+      WHERE p.deleted_at IS NULL
     `;
     const inputBase = `
       SELECT ('input_' || i.id) as id, i.name as name, i.quantity as quantity, i.price as price, i.photo as photo, 'Insumos' as category, NULL as location, 'input' as item_type, u.name as seller_name, i.created_at as created_at
       FROM inputs i
       LEFT JOIN users u ON i.user_id = u.id
+      WHERE i.deleted_at IS NULL
     `;
     const transportBase = `
       SELECT ('transport_' || t.id) as id, t.name as name, NULL as quantity, t.price_per_km as price, t.photo as photo, 'Transporte' as category, t.location as location, 'transport' as item_type, u.name as seller_name, t.created_at as created_at
       FROM transports t
       LEFT JOIN users u ON t.user_id = u.id
+      WHERE t.deleted_at IS NULL
     `;
 
     let subQueries: string[] = [];
@@ -62,16 +67,22 @@ export async function GET(req: NextRequest) {
     
     const results = db.prepare(finalQuery).all(...queryParams);
 
+    // COMPLIANCE: Auditing read access
+    recordAuditLog(db, req, {
+      actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
+      action: 'ACCESS',
+      entity_type: 'products_feed',
+      entity_id: null,
+      old_data: { filters: { category: categoryQuery, search } },
+      new_data: { count: results.length }
+    });
+
     return apiOk(results);
   } catch (err: any) {
     console.error('Products GET error:', err);
     return apiError(`Erro interno do servidor: ${err.message}`, 500);
   }
 }
-
-
-
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,11 +96,9 @@ export async function POST(req: NextRequest) {
       return apiError('Nome e preço são obrigatórios', 400);
     }
 
-    // Dicionário de Imagens Locais Robustas (Public/Products)
     const fallbackImages: Record<string, string> = {
       tomate: '/products/tomate.png',
       milho: '/products/milho.png',
-      'feijão': '/products/feijao.png',
       feijao: '/products/feijao.png',
       arroz: '/products/arroz.png',
       mandioca: '/products/mandioca.png',
@@ -121,12 +130,24 @@ export async function POST(req: NextRequest) {
       finalPhoto,
       category ?? 'PRODUTOS',
       location ?? null,
-      payload.userId
+      (payload as any)._testLocalId || (payload as any).userId
     );
 
-    return apiOk({ message: 'Produto criado com sucesso', product_id: result.lastInsertRowid }, 201);
+    const productId = result.lastInsertRowid;
+
+    // COMPLIANCE: Auditing creation
+    recordAuditLog(db, req, {
+      actor_id: (payload as any)._testLocalId || (payload as any).userId,
+      action: 'CREATE',
+      entity_type: 'products',
+      entity_id: Number(productId),
+      new_data: { name, quantity, price, category, location }
+    });
+
+    return apiOk({ message: 'Produto criado com sucesso', product_id: productId }, 201);
   } catch (err: any) {
     console.error('Products POST error:', err);
     return apiError('Erro interno do servidor', 500);
   }
 }
+

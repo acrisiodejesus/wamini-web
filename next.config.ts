@@ -36,8 +36,14 @@ const nextConfig = {
     ],
   },
 
+  // ── Deployment ────────────────────────────────────────────────────────
+  output: 'standalone',
+  // Garante que URLs terminem em / para SEO e rotas do next-intl
+  trailingSlash: true,
+
   // ── Compressão ───────────────────────────────────────────────────────────
   compress: true,
+
 
   // ── Remove header desnecessário ──────────────────────────────────────────
   poweredByHeader: false,

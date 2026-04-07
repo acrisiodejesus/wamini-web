@@ -11,6 +11,7 @@ import { Link } from '@/i18n/routing';
 import Sidebar from '@/components/layout/Sidebar';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import apiClient from '@/lib/api/client';
+import UserReviews from '@/components/features/UserReviews';
 
 const settingsSchema = z.object({
   name: z.string().min(2, 'Nome muito curto'),
@@ -128,6 +129,16 @@ export default function SettingsPage() {
               Terminar Sessão
             </button>
           </div>
+
+          {/* Reviews Section */}
+          {user?.id && (
+            <div className="mt-6">
+              <UserReviews
+                targetUserId={Number(user.id)}
+                targetUserName={user.name}
+              />
+            </div>
+          )}
         </div>
       </div>
     </>

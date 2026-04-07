@@ -125,3 +125,27 @@ export interface MessageResponse {
   message: string;
   data: Message;
 }
+
+// Review types
+export interface Review {
+  id: number;
+  reviewer_id: number;
+  reviewer_name: string;
+  target_id: number;
+  negotiation_id: number;
+  rating: number;       // 1..5
+  comment: string | null;
+  created_at: string;
+}
+
+export interface CreateReviewData {
+  target_id: number;
+  rating: number;
+  comment?: string;
+}
+
+export interface ReviewsResponse {
+  reviews: Review[];
+  average_rating: number;
+  total_count: number;
+}

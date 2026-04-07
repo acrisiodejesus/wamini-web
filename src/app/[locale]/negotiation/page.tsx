@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, ArrowLeft, Loader2, MessageSquare, Paperclip, File } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, MessageSquare, Paperclip, File, Star } from 'lucide-react';
 import Sidebar from '@/components/layout/Sidebar';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 import { Link } from '@/i18n/routing';
@@ -11,16 +11,19 @@ import apiClient from '@/lib/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import NotificationsDropdown from '@/components/features/NotificationsDropdown';
 import { useSearchParams } from 'next/navigation';
+import ReviewModal from '@/components/features/ReviewModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Negotiation {
   id: number;
+  other_user_id: number | null;
   other_user_name: string | null;
   product_name: string | null;
   input_name: string | null;
   transport_name: string | null;
   last_message: string | null;
   last_timestamp: string;
+  status?: string;
   created_at: string;
 }
 
@@ -103,9 +106,12 @@ function ChatPanel({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const canReview = negotiation.other_user_id && negotiation.other_user_id !== currentUserId;
 
   const loadMessages = useCallback(async () => {
     try {
@@ -216,6 +222,7 @@ function ChatPanel({
   const itemName = getItemName(negotiation);
 
   return (
+    <>
     <div className="md:col-span-2 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden h-[calc(100vh-140px)] md:h-[600px]">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center gap-3 flex-shrink-0">
@@ -232,10 +239,21 @@ function ChatPanel({
         >
           {getOtherUserInitial(negotiation.other_user_name)}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-bold text-gray-900 truncate">{otherName}</p>
           <p className="text-xs text-gray-500 truncate">{itemName}</p>
         </div>
+        {canReview && (
+          <button
+            onClick={() => setShowReviewModal(true)}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-black hover:scale-105 transition-transform"
+            style={{ background: 'linear-gradient(135deg, #D8FF12 0%, #FBB03B 100%)' }}
+            aria-label={`Avaliar ${otherName}`}
+          >
+            <Star size={13} />
+            Avaliar
+          </button>
+        )}
       </div>
 
       {/* Messages */}
@@ -303,6 +321,16 @@ function ChatPanel({
         </div>
       </div>
     </div>
+
+    {canReview && negotiation.other_user_id && (
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        targetUser={{ id: negotiation.other_user_id, name: otherName }}
+        negotiationId={negotiation.id}
+      />
+    )}
+    </>
   );
 }
 

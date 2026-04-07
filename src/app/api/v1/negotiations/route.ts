@@ -3,6 +3,7 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
 import { getAuthPayload, apiError, apiOk } from '@/lib/auth';
+import { recordAuditLog } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,6 +11,8 @@ export async function GET(req: NextRequest) {
     if (!payload) return apiError('Não autenticado', 401);
 
     const db = getDb();
+    const actorId = (payload as any)._testLocalId || (payload as any).userId;
+
     const negotiations = db.prepare(`
       SELECT
         n.*,
@@ -24,22 +27,22 @@ export async function GET(req: NextRequest) {
       LEFT JOIN products p ON n.product_id = p.id
       LEFT JOIN inputs i ON n.input_id = i.id
       LEFT JOIN transports t ON n.transport_id = t.id
-      WHERE n.buyer_id = ? OR n.seller_id = ?
+      WHERE (n.buyer_id = ? OR n.seller_id = ?) AND n.deleted_at IS NULL
       ORDER BY n.created_at DESC
-    `).all(payload.userId, payload.userId, payload.userId);
+    `).all(actorId, actorId, actorId);
 
     // Incluir última mensagem e contagem
     const withMessages = negotiations.map((neg: any) => {
       const lastMsg = db.prepare(`
         SELECT body, timestamp FROM messages
-        WHERE negotiation_id = ?
+        WHERE negotiation_id = ? AND deleted_at IS NULL
         ORDER BY timestamp DESC LIMIT 1
       `).get(neg.id) as any;
 
       const unreadCount = (db.prepare(`
         SELECT COUNT(*) as c FROM messages
-        WHERE negotiation_id = ? AND sender_id != ? AND is_read = 0
-      `).get(neg.id, payload.userId) as any).c;
+        WHERE negotiation_id = ? AND sender_id != ? AND is_read = 0 AND deleted_at IS NULL
+      `).get(neg.id, actorId) as any).c;
 
       return {
         ...neg,
@@ -47,6 +50,15 @@ export async function GET(req: NextRequest) {
         last_timestamp: lastMsg?.timestamp ?? neg.created_at,
         unread_count: unreadCount
       };
+    });
+
+    // COMPLIANCE: Audit read access to sensitive negotiation list
+    recordAuditLog(db, req, {
+      actor_id: actorId,
+      action: 'ACCESS',
+      entity_type: 'negotiations_list',
+      entity_id: null,
+      new_data: { count: withMessages.length }
     });
 
     return apiOk(withMessages);
@@ -61,6 +73,7 @@ export async function POST(req: NextRequest) {
     const payload = await getAuthPayload(req);
     if (!payload) return apiError('Não autenticado', 401);
 
+    const actorId = (payload as any)._testLocalId || (payload as any).userId;
     const body = await req.json();
     let { product_id, input_id, transport_id, messages } = body;
 
@@ -97,12 +110,14 @@ export async function POST(req: NextRequest) {
       INSERT INTO negotiations (buyer_id, seller_id, product_id, input_id, transport_id)
       VALUES (?, ?, ?, ?, ?)
     `).run(
-      payload.userId,
+      actorId,
       seller_id,
       product_id ?? null,
       input_id ?? null,
       transport_id ?? null
     );
+
+    const negId = result.lastInsertRowid;
 
     // Inserir mensagem inicial se fornecida
     if (messages && Array.isArray(messages) && messages.length > 0) {
@@ -110,13 +125,23 @@ export async function POST(req: NextRequest) {
         db.prepare(`
           INSERT INTO messages (negotiation_id, sender_id, body)
           VALUES (?, ?, ?)
-        `).run(result.lastInsertRowid, payload.userId, msg.body ?? msg);
+        `).run(negId, actorId, msg.body ?? msg);
       }
     }
 
-    return apiOk({ message: 'Negociação criada', negotiation_id: result.lastInsertRowid }, 201);
+    // COMPLIANCE: Audit creation
+    recordAuditLog(db, req, {
+      actor_id: actorId,
+      action: 'CREATE',
+      entity_type: 'negotiations',
+      entity_id: Number(negId),
+      new_data: { buyer_id: actorId, seller_id, product_id, input_id, transport_id }
+    });
+
+    return apiOk({ message: 'Negociação criada', negotiation_id: negId }, 201);
   } catch (err: any) {
     console.error('Negotiations POST error:', err);
     return apiError('Erro interno do servidor', 500);
   }
 }
+
