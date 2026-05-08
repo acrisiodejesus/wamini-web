@@ -10,6 +10,8 @@ const NotificationSystem = dynamic(
   { ssr: false }
 );
 
+import AuthSync from '@/components/auth/AuthSync';
+
 export default function Providers({ children }: { children: ReactNode }) {
   // useState garante que cada request tem o seu próprio QueryClient no SSR
   const [queryClient] = useState(
@@ -32,6 +34,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <VoiceProvider>
+        <AuthSync />
         <NotificationSystem />
         {children}
       </VoiceProvider>

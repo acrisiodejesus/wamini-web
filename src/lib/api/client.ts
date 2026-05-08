@@ -49,7 +49,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       clearToken();
-      if (typeof window !== 'undefined') {
+      
+      // Do not redirect on profile fetch to allow anonymous access to public pages
+      if (originalRequest.url !== '/users/profile' && typeof window !== 'undefined') {
         window.location.href = '/pt/auth/login';
       }
     }
