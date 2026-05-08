@@ -27,12 +27,12 @@ export async function POST(req: NextRequest) {
           subscription_status = 'active', 
           subscription_expiry = ?
       WHERE id = ?`,
-      args: [plan, expiryStr, payload.userId],
+      args: [plan, expiryStr, payload.userId as number],
     });
 
     const result = await db.execute({
       sql: 'SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry FROM users WHERE id = ?',
-      args: [payload.userId],
+      args: [payload.userId as number],
     });
     const updatedUser = result.rows[0];
 

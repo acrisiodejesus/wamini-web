@@ -12,41 +12,22 @@ import { useAuthStore } from '@/stores/authStore';
 import NotificationsDropdown from '@/components/features/NotificationsDropdown';
 import { useSearchParams } from 'next/navigation';
 import ReviewModal from '@/components/features/ReviewModal';
+import { useNegotiations, useMessages, useSendMessage } from '@/hooks/useNegotiations';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Negotiation {
-  id: number;
-  other_user_id: number | null;
-  other_user_name: string | null;
-  product_name: string | null;
-  input_name: string | null;
-  transport_name: string | null;
-  last_message: string | null;
-  last_timestamp: string;
-  status?: string;
-  created_at: string;
-}
 
-interface Message {
-  id: number;
-  sender_id: number;
-  sender_name: string;
-  body: string | null;
-  attachment_url?: string | null;
-  attachment_type?: string | null;
-  timestamp: string;
-}
+import type { Negotiation, Message } from '@/lib/api/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getItemName(neg: Negotiation) {
   return neg.product_name || neg.input_name || neg.transport_name || 'Negociação';
 }
 
-function getOtherUserInitial(name: string | null) {
+function getOtherUserInitial(name: string | null | undefined) {
   return (name || '?').charAt(0).toUpperCase();
 }
 
-function formatTime(ts: string) {
+function formatTime(ts: string | undefined) {
+  if (!ts) return '';
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -101,8 +82,9 @@ function ChatPanel({
   currentUserId: number;
   onBack: () => void;
 }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loadingMsgs, setLoadingMsgs] = useState(true);
+  const { messages, isLoading: loadingMsgs } = useMessages(negotiation.id);
+  const { mutateAsync: sendMessage } = useSendMessage(negotiation.id);
+
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,64 +95,25 @@ function ChatPanel({
 
   const canReview = negotiation.other_user_id && negotiation.other_user_id !== currentUserId;
 
-  const loadMessages = useCallback(async () => {
-    try {
-      const res = await apiClient.get<Message[]>(`/negotiations/${negotiation.id}/messages`);
-      setMessages(res.data);
-    } catch {
-      // silently ignore 
-    } finally {
-      setLoadingMsgs(false);
-    }
-  }, [negotiation.id]);
-
   useEffect(() => {
-    setLoadingMsgs(true);
-    setMessages([]);
-    loadMessages();
     inputRef.current?.focus();
-  }, [negotiation.id, loadMessages]);
+  }, [negotiation.id]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Poll for new messages every 5s
-  useEffect(() => {
-    const interval = setInterval(loadMessages, 5000);
-    return () => clearInterval(interval);
-  }, [loadMessages]);
-
   const handleSend = async () => {
     const body = text.trim();
-    if (!body && !sending) return; // Permitiremos enviar anexo ou text, a logica ficara mais abaixo.
+    if (!body && !sending) return;
     if (sending) return;
     setSending(true);
     setText('');
 
-    // Optimistic update
-    const optimistic: Message = {
-      id: Date.now(),
-      sender_id: currentUserId,
-      sender_name: 'Eu',
-      body,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
-
     try {
-      const res = await apiClient.post<{ message: string; data: Message }>(
-        `/negotiations/${negotiation.id}/messages`,
-        { body }
-      );
-      // Replace optimistic with real message
-      setMessages((prev) =>
-        prev.map((m) => (m.id === optimistic.id ? res.data.data : m))
-      );
+      await sendMessage({ body });
     } catch {
-      // Revert optimistic on error
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       setText(body);
     } finally {
       setSending(false);
@@ -191,18 +134,13 @@ function ChatPanel({
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Envia a mensagem com anexo e um body opcional vazio
-      const res = await apiClient.post<{ data: Message }>(
-        `/negotiations/${negotiation.id}/messages`,
-        { 
-          body: text.trim() || undefined,
-          attachment_url: uploadRes.data.url,
-          attachment_type: uploadRes.data.type
-        }
-      );
+      await sendMessage({
+        body: text.trim() || undefined,
+        attachment_url: uploadRes.data.url,
+        attachment_type: uploadRes.data.type
+      });
       
-      setText(''); // limpa
-      setMessages((prev) => [...prev, res.data.data]);
+      setText('');
     } catch (err) {
       alert('Erro ao enviar ficheiro. Pode exceder o tamanho máximo.');
     } finally {
@@ -353,38 +291,28 @@ export default function NegotiationPage() {
   const searchParams = useSearchParams();
   const chatId = searchParams.get('chat');
 
-  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { negotiations, isLoading: loading } = useNegotiations();
   const [selected, setSelected] = useState<Negotiation | null>(null);
   const [search, setSearch] = useState('');
 
+  // Select logic on load
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await apiClient.get<Negotiation[]>('/negotiations');
-        setNegotiations(res.data);
-        
-        // Se houver um chatId na Query String, tenta abri-lo directamente (acção da notificação)
-        if (chatId) {
-          const target = res.data.find(n => n.id.toString() === chatId);
-          if (target) {
-            setSelected(target);
-            return;
-          }
-        }
+    if (loading || negotiations.length === 0) return;
 
-        // Caso contrário, Seleccionar a primeira automaticamente em desktop
-        if (res.data.length > 0 && typeof window !== 'undefined' && window.innerWidth >= 768) {
-          setSelected(res.data[0]);
+    if (!selected) {
+      if (chatId) {
+        const target = negotiations.find(n => n.id.toString() === chatId);
+        if (target) {
+          setSelected(target);
+          return;
         }
-      } catch (err) {
-        console.error('Failed to load negotiations:', err);
-      } finally {
-        setLoading(false);
       }
-    };
-    load();
-  }, []);
+
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setSelected(negotiations[0]);
+      }
+    }
+  }, [loading, negotiations, chatId, selected]);
 
   const filtered = negotiations.filter((n) => {
     const name = (n.other_user_name || '').toLowerCase();

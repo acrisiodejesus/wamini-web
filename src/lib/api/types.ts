@@ -96,11 +96,23 @@ export interface CreateTransportData {
 // Negotiation/Chat types
 export interface Negotiation {
   id: number;
-  messages: any[]; // Array of message objects
-  created_at: string;
+  buyer_id: number;
+  seller_id: number;
   product_id?: number;
   input_id?: number;
   transport_id?: number;
+  status?: string;
+  created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+  other_user_id?: number | null;
+  other_user_name?: string | null;
+  product_name?: string | null;
+  input_name?: string | null;
+  transport_name?: string | null;
+  last_message?: string | null;
+  last_timestamp?: string;
+  unread_count?: number;
 }
 
 export interface Message {
@@ -118,7 +130,9 @@ export interface CreateNegotiationData {
 }
 
 export interface SendMessageData {
-  body: string;
+  body?: string;
+  attachment_url?: string;
+  attachment_type?: string;
 }
 
 export interface MessageResponse {

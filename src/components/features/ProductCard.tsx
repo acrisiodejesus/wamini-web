@@ -7,6 +7,7 @@ import apiClient, { getToken } from '@/lib/api/client';
 import clsx from 'clsx';
 import { useAuthStore } from '@/stores/authStore';
 import SubscriptionPaywallModal from '@/components/features/SubscriptionPaywallModal';
+import { useCreateNegotiation } from '@/hooks/useNegotiations';
 
 interface ProductCardProps {
   product: Product;
@@ -17,6 +18,7 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
   const [contacting, setContacting] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const { user } = useAuthStore();
+  const { mutateAsync: createNegotiation } = useCreateNegotiation();
 
   const isMyProduct = user?.id?.toString() === product.seller.id.toString();
 
@@ -56,7 +58,7 @@ export default function ProductCard({ product, apiProductId }: ProductCardProps)
         payload.product_id = cleanId;
       }
 
-      await apiClient.post(`/negotiations`, payload);
+      await createNegotiation(payload);
       window.location.href = '/pt/negotiation';
     } catch (err: any) {
       if (err?.response?.status === 401) {
