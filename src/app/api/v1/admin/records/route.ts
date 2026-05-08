@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
     const admin = await ensureAdmin(req);
     if (!admin) return apiError('Acesso restrito: Administradores apenas', 403);
 
-    const db = getDb();
+    const db = await getDb();
     
     // Unified query to fetch soft-deleted records across tables
-    const deletedRecords = db.prepare(`
+    const result = await db.execute(`
       SELECT 'product' as type, id, name, deleted_at FROM products WHERE deleted_at IS NOT NULL
       UNION ALL
       SELECT 'input' as type, id, name, deleted_at FROM inputs WHERE deleted_at IS NOT NULL
@@ -23,9 +23,9 @@ export async function GET(req: NextRequest) {
       UNION ALL
       SELECT 'review' as type, id, ('Avaliação #' || id) as name, deleted_at FROM reviews WHERE deleted_at IS NOT NULL
       ORDER BY deleted_at DESC
-    `).all();
+    `);
 
-    return apiOk(deletedRecords);
+    return apiOk(result.rows);
   } catch (err: any) {
     console.error('Admin Records GET error:', err);
     return apiError('Erro interno ao carregar registos eliminados', 500);
@@ -47,22 +47,26 @@ export async function POST(req: NextRequest) {
 
     if (!validTables.includes(tableName)) return apiError('Tipo inválido', 400);
 
-    const db = getDb();
+    const db = await getDb();
     
     // Fetch old state for audit
-    const oldRecord = db.prepare(`SELECT * FROM ${tableName} WHERE id = ?`).get(Number(id));
+    const oldResult = await db.execute({ sql: `SELECT * FROM ${tableName} WHERE id = ?`, args: [Number(id)] });
+    const oldRecord = oldResult.rows[0] as any;
     if (!oldRecord) return apiError('Registo não encontrado', 404);
 
     // RESTORE: Clear deleted_at
-    db.prepare(`UPDATE ${tableName} SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ?`).run(Number(id));
+    await db.execute({
+      sql: `UPDATE ${tableName} SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ?`,
+      args: [Number(id)],
+    });
 
     // COMPLIANCE: Audit the restoration event
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: admin.id,
       action: 'UPDATE', // Special update: Restore
       entity_type: tableName,
       entity_id: Number(id),
-      old_data: { context: 'RESTORE_FROM_SOFT_DELETE', deleted_at: (oldRecord as any).deleted_at },
+      old_data: { context: 'RESTORE_FROM_SOFT_DELETE', deleted_at: oldRecord.deleted_at },
       new_data: { context: 'RESTORED_BY_ADMIN' }
     });
 

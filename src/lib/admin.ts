@@ -17,21 +17,23 @@ export async function ensureAdmin(req?: NextRequest): Promise<AdminSession | nul
   const payload = await getAuthPayload(req);
   if (!payload) return null;
 
-  const db = getDb();
+  const db = await getDb();
   
   // Use _testLocalId for mocks or userId for real Auth0 sessions
   const actorId = (payload as any)._testLocalId || (payload as any).userId;
   
   if (!actorId) return null;
 
-  const user = db.prepare(`
-    SELECT id, name, role FROM users 
-    WHERE id = ? AND deleted_at IS NULL
-  `).get(actorId) as AdminSession | undefined;
+  const result = await db.execute({
+    sql: `SELECT id, name, role FROM users WHERE id = ? AND deleted_at IS NULL`,
+    args: [actorId],
+  });
+
+  const user = result.rows[0] as any;
 
   if (!user || user.role !== 'admin') {
     return null;
   }
 
-  return user;
+  return { id: Number(user.id), name: user.name, role: user.role };
 }

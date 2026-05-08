@@ -8,6 +8,11 @@ const envSchema = z.object({
   AUTH0_ISSUER_BASE_URL: z.string().url("AUTH0_ISSUER_BASE_URL must be a valid URL"),
   AUTH0_CLIENT_ID: z.string().min(1, "AUTH0_CLIENT_ID is required"),
   AUTH0_CLIENT_SECRET: z.string().min(1, "AUTH0_CLIENT_SECRET is required"),
+  // Turso (optional in dev — uses local file)
+  TURSO_DATABASE_URL: z.string().optional(),
+  TURSO_AUTH_TOKEN: z.string().optional(),
+  // Vercel Blob (optional in dev)
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
 });
 
 // Execute validation on load

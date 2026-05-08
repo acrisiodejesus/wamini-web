@@ -13,22 +13,23 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const entityType = searchParams.get('entity_type');
 
-    const db = getDb();
-    let query = 'SELECT * FROM audit_logs';
-    let params: any[] = [];
+    const db = await getDb();
+    let sql = 'SELECT * FROM audit_logs';
+    let args: any[] = [];
 
     if (entityType) {
-      query += ' WHERE entity_type = ?';
-      params.push(entityType);
+      sql += ' WHERE entity_type = ?';
+      args.push(entityType);
     }
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    args.push(limit, offset);
 
-    const logs = db.prepare(query).all(...params);
-    const total = db.prepare('SELECT COUNT(*) as count FROM audit_logs').get() as { count: number };
+    const logsResult = await db.execute({ sql, args });
+    const totalResult = await db.execute('SELECT COUNT(*) as count FROM audit_logs');
+    const total = Number((totalResult.rows[0] as any).count);
 
-    return apiOk({ logs, total: total.count });
+    return apiOk({ logs: logsResult.rows, total });
   } catch (err: any) {
     console.error('Admin Logs GET error:', err);
     return apiError('Erro interno ao carregar logs', 500);

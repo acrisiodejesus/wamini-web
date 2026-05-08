@@ -8,25 +8,25 @@ import { recordAuditLog } from '@/lib/audit';
 export async function GET(req: NextRequest) {
   try {
     const payload = await getAuthPayload(req);
-    const db = getDb();
-    const transports = db.prepare(
+    const db = await getDb();
+    const result = await db.execute(
       `SELECT t.*, u.name as owner_name
        FROM transports t
        LEFT JOIN users u ON t.user_id = u.id
        WHERE t.deleted_at IS NULL
        ORDER BY t.created_at DESC`
-    ).all();
+    );
 
     // COMPLIANCE: Audit read access
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
       action: 'ACCESS',
       entity_type: 'transports_list',
       entity_id: null,
-      new_data: { count: transports.length }
+      new_data: { count: result.rows.length }
     });
 
-    return apiOk(transports);
+    return apiOk(result.rows);
   } catch (err: any) {
     console.error('Transports GET error:', err);
     return apiError('Erro interno do servidor', 500);
@@ -62,21 +62,21 @@ export async function POST(req: NextRequest) {
       finalPhoto = match ? fallbackImages[match] : fallbackImages['default'];
     }
 
-    const db = getDb();
+    const db = await getDb();
     const actorId = (payload as any)._testLocalId || (payload as any).userId;
-    const result = db.prepare(`
-      INSERT INTO transports (transport_type, name, price_per_km, photo, location, user_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(transport_type, name, price_per_km, finalPhoto, location ?? null, actorId);
+    const result = await db.execute({
+      sql: `INSERT INTO transports (transport_type, name, price_per_km, photo, location, user_id) VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [transport_type, name, price_per_km, finalPhoto, location ?? null, actorId],
+    });
 
-    const transportId = result.lastInsertRowid;
+    const transportId = Number(result.lastInsertRowid);
 
     // COMPLIANCE: Audit creation
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'CREATE',
       entity_type: 'transports',
-      entity_id: Number(transportId),
+      entity_id: transportId,
       new_data: { name, transport_type, price_per_km }
     });
 
@@ -86,4 +86,3 @@ export async function POST(req: NextRequest) {
     return apiError('Erro interno do servidor', 500);
   }
 }
-

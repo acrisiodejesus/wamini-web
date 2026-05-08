@@ -8,19 +8,21 @@ export async function GET(req: NextRequest) {
     const payload = await getAuthPayload(req);
     if (!payload) return apiError('Não autenticado', 401);
 
-    const db = getDb();
+    const db = await getDb();
     const actorId = (payload as any)._testLocalId || (payload as any).userId;
 
-    const user = db.prepare(`
-      SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry 
+    const result = await db.execute({
+      sql: `SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry 
       FROM users 
-      WHERE id = ? AND deleted_at IS NULL
-    `).get(actorId) as any;
+      WHERE id = ? AND deleted_at IS NULL`,
+      args: [actorId],
+    });
 
+    const user = result.rows[0];
     if (!user) return apiError('Utilizador não encontrado', 404);
 
     // COMPLIANCE: Audit read access to sensitive profile data
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'ACCESS',
       entity_type: 'users',
@@ -42,24 +44,29 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
     const { name, localization, photo, mobile_number, role } = body;
-    const db = getDb();
+    const db = await getDb();
     const actorId = payload.userId;
 
     // Fetch old data for audit
-    const oldUser = db.prepare('SELECT name, localization, photo, mobile_number, role FROM users WHERE id = ? AND deleted_at IS NULL').get(actorId) as any;
+    const oldResult = await db.execute({
+      sql: 'SELECT name, localization, photo, mobile_number, role FROM users WHERE id = ? AND deleted_at IS NULL',
+      args: [actorId],
+    });
+    const oldUser = oldResult.rows[0];
     if (!oldUser) return apiError('Utilizador não encontrado', 404);
 
     try {
-      db.prepare(`
-        UPDATE users 
+      await db.execute({
+        sql: `UPDATE users 
         SET name = COALESCE(?, name), 
             localization = COALESCE(?, localization), 
             photo = COALESCE(?, photo),
             mobile_number = COALESCE(?, mobile_number),
             role = COALESCE(?, role),
             updated_at = datetime('now')
-        WHERE id = ?
-      `).run(name ?? null, localization ?? null, photo ?? null, mobile_number ?? null, role ?? null, actorId);
+        WHERE id = ?`,
+        args: [name ?? null, localization ?? null, photo ?? null, mobile_number ?? null, role ?? null, actorId],
+      });
     } catch (dbErr: any) {
       if (dbErr.message?.includes('UNIQUE constraint failed: users.mobile_number')) {
         return apiError('Este número de telefone já está a ser utilizado por outra conta', 409);
@@ -67,26 +74,22 @@ export async function PUT(req: NextRequest) {
       throw dbErr;
     }
 
-    const updatedUser = db.prepare(`
-      SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry 
+    const updatedResult = await db.execute({
+      sql: `SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry 
       FROM users 
-      WHERE id = ?
-    `).get(actorId) as any;
+      WHERE id = ?`,
+      args: [actorId],
+    });
+    const updatedUser = updatedResult.rows[0];
 
     // COMPLIANCE: Audit update - fraud-proof record
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'UPDATE',
       entity_type: 'users',
       entity_id: actorId,
       old_data: oldUser,
-      new_data: { 
-        name: updatedUser.name, 
-        localization: updatedUser.localization, 
-        photo: updatedUser.photo,
-        mobile_number: updatedUser.mobile_number,
-        role: updatedUser.role
-      }
+      new_data: updatedUser
     });
 
     return apiOk(updatedUser);
@@ -95,4 +98,3 @@ export async function PUT(req: NextRequest) {
     return apiError('Erro ao actualizar perfil', 500);
   }
 }
-

@@ -14,24 +14,27 @@ export async function POST(req: NextRequest) {
       return apiError('Plano inválido', 400);
     }
 
-    const db = getDb();
+    const db = await getDb();
     
     // Calcula a data de expiração (1 mês a partir de hoje)
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + 1);
     const expiryStr = expiryDate.toISOString();
 
-    db.prepare(`
-      UPDATE users 
+    await db.execute({
+      sql: `UPDATE users 
       SET subscription_plan = ?, 
           subscription_status = 'active', 
           subscription_expiry = ?
-      WHERE id = ?
-    `).run(plan, expiryStr, payload.userId);
+      WHERE id = ?`,
+      args: [plan, expiryStr, payload.userId],
+    });
 
-    const updatedUser = db.prepare(
-      'SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry FROM users WHERE id = ?'
-    ).get(payload.userId) as any;
+    const result = await db.execute({
+      sql: 'SELECT id, name, mobile_number, localization, photo, role, subscription_plan, subscription_status, subscription_expiry FROM users WHERE id = ?',
+      args: [payload.userId],
+    });
+    const updatedUser = result.rows[0];
 
     return apiOk({ message: 'Assinatura activada com sucesso!', user: updatedUser });
   } catch (err: any) {

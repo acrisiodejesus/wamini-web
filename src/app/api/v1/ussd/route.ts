@@ -79,25 +79,29 @@ function getProductName(id: string) {
 }
 
 async function createProductViaUssd(mobile: string, productId: string, qty: string, price: string) {
-  const db = getDb();
+  const db = await getDb();
   
   // Clean phone number (remove +258 if present)
   const cleanMobile = mobile.replace('+258', '');
   
   // Find user
-  const user = db.prepare("SELECT id FROM users WHERE mobile_number = ?").get(cleanMobile) as { id: number } | undefined;
+  const result = await db.execute({
+    sql: "SELECT id FROM users WHERE mobile_number = ?",
+    args: [cleanMobile],
+  });
+  const user = result.rows[0] as any;
   if (!user) {
     // If not found, use user 1 as default (fallback for simulation)
     console.warn(`USSD: User with mobile ${cleanMobile} not found. Using ID 1.`);
   }
-  const userId = user?.id || 1;
+  const userId = user ? Number(user.id) : 1;
 
   const category = 'Produtos';
   const name = getProductName(productId);
   const photo = `/products/${productId === '1' ? 'milho' : productId === '3' ? 'tomate' : 'feijao'}.png`;
 
-  db.prepare(`
-    INSERT INTO products (name, quantity, price, photo, category, location, user_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(name, parseFloat(qty), parseFloat(price), photo, category, 'Posto Remoto', userId);
+  await db.execute({
+    sql: `INSERT INTO products (name, quantity, price, photo, category, location, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [name, parseFloat(qty), parseFloat(price), photo, category, 'Posto Remoto', userId],
+  });
 }

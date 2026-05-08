@@ -8,25 +8,25 @@ import { recordAuditLog } from '@/lib/audit';
 export async function GET(req: NextRequest) {
   try {
     const payload = await getAuthPayload(req);
-    const db = getDb();
-    const inputs = db.prepare(
+    const db = await getDb();
+    const result = await db.execute(
       `SELECT i.*, u.name as seller_name
        FROM inputs i
        LEFT JOIN users u ON i.user_id = u.id
        WHERE i.deleted_at IS NULL
        ORDER BY i.created_at DESC`
-    ).all();
+    );
 
     // COMPLIANCE: Audit read access
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
       action: 'ACCESS',
       entity_type: 'inputs_list',
       entity_id: null,
-      new_data: { count: inputs.length }
+      new_data: { count: result.rows.length }
     });
 
-    return apiOk(inputs);
+    return apiOk(result.rows);
   } catch (err: any) {
     console.error('Inputs GET error:', err);
     return apiError('Erro interno do servidor', 500);
@@ -60,21 +60,21 @@ export async function POST(req: NextRequest) {
       finalPhoto = match ? fallbackImages[match] : fallbackImages['default'];
     }
 
-    const db = getDb();
+    const db = await getDb();
     const actorId = (payload as any)._testLocalId || (payload as any).userId;
-    const result = db.prepare(`
-      INSERT INTO inputs (name, quantity, price, photo, user_id)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(name, quantity ?? 0, price, finalPhoto, actorId);
+    const result = await db.execute({
+      sql: `INSERT INTO inputs (name, quantity, price, photo, user_id) VALUES (?, ?, ?, ?, ?)`,
+      args: [name, quantity ?? 0, price, finalPhoto, actorId],
+    });
 
-    const inputId = result.lastInsertRowid;
+    const inputId = Number(result.lastInsertRowid);
 
     // COMPLIANCE: Audit creation
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'CREATE',
       entity_type: 'inputs',
-      entity_id: Number(inputId),
+      entity_id: inputId,
       new_data: { name, quantity, price }
     });
 
@@ -84,4 +84,3 @@ export async function POST(req: NextRequest) {
     return apiError('Erro interno do servidor', 500);
   }
 }
-

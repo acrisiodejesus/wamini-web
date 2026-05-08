@@ -34,15 +34,16 @@ const nextConfig = {
         protocol: 'https' as const,
         hostname: 'images.unsplash.com',
       },
+      {
+        protocol: 'https' as const,
+        hostname: '*.public.blob.vercel-storage.com',
+      },
     ],
   },
 
   // ── Deployment ────────────────────────────────────────────────────────
-  output: 'standalone',
   // Desactivado para evitar problemas com Auth0/API redirects
   trailingSlash: false,
-  // Módulos nativos e externos que não devem ser bundled pelo Next.js 15
-  serverExternalPackages: ['better-sqlite3'],
 
   // Ignora erros de lint/tipagem no build de produção para garantir deploy rápido
   eslint: {

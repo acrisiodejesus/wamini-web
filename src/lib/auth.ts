@@ -37,24 +37,27 @@ export async function getAuthPayload(req?: NextRequest) {
   if (!session || !session.user) return null;
 
   const sub = session.user.sub;
-  const db = getDb();
+  const db = await getDb();
 
   // Procurar utilizador interno pelo Auth0 sub
-  let user = db.prepare('SELECT id, name, role FROM users WHERE auth0_sub = ? AND deleted_at IS NULL').get(sub) as any;
+  const result = await db.execute({
+    sql: 'SELECT id, name, role FROM users WHERE auth0_sub = ? AND deleted_at IS NULL',
+    args: [sub],
+  });
+  let user = result.rows[0] as any;
 
   // AUTO-LINKER: Se não existe na DB local, cria-o agora (Primeiro acesso)
   if (!user) {
     try {
       const name = session.user.name || session.user.nickname || 'Novo Utilizador';
-      const email = session.user.email || '';
       
       // Criar com mobile_number placeholder pois o Auth0 não o fornece por defeito
-      const info = db.prepare(`
-        INSERT INTO users (name, auth0_sub, mobile_number, role)
-        VALUES (?, ?, ?, 'buyer')
-      `).run(name, sub, `auth0_${sub.split('|')[1] || Date.now()}`);
+      const info = await db.execute({
+        sql: `INSERT INTO users (name, auth0_sub, mobile_number, role) VALUES (?, ?, ?, 'buyer')`,
+        args: [name, sub, `auth0_${sub.split('|')[1] || Date.now()}`],
+      });
       
-      user = { id: info.lastInsertRowid, name, role: 'buyer' };
+      user = { id: Number(info.lastInsertRowid), name, role: 'buyer' };
       console.log(`[AuthLinker] Novo utilizador local criado: ${name} (ID: ${user.id})`);
     } catch (err) {
       console.error('[AuthLinker] Erro ao criar utilizador local:', err);
@@ -64,7 +67,7 @@ export async function getAuthPayload(req?: NextRequest) {
   
   return {
     ...session.user,
-    userId: user?.id,
+    userId: user?.id ? Number(user.id) : undefined,
     internalRole: user?.role,
     name: user?.name || session.user.name
   };

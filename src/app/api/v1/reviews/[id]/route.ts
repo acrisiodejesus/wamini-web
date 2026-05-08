@@ -27,14 +27,18 @@ export async function PUT(req: NextRequest, { params }: { params: any }) {
     const user = await getAuthPayload(req);
     if (!user) return apiError("401 Unauthorized", 401);
 
-    const db = getDb();
+    const db = await getDb();
     const actorId = (user as any)._testLocalId || (user as any).userId;
 
     // COMPLIANCE: Fetch old state for audit and IDOR check
-    const oldReview = db.prepare('SELECT * FROM reviews WHERE id = ? AND deleted_at IS NULL').get(targetReviewId) as any;
+    const oldResult = await db.execute({
+      sql: 'SELECT * FROM reviews WHERE id = ? AND deleted_at IS NULL',
+      args: [targetReviewId],
+    });
+    const oldReview = oldResult.rows[0] as any;
     
     if (!oldReview) return apiError("Review not found or deleted", 404);
-    if (oldReview.reviewer_id !== actorId) return apiError("403 Forbidden: You do not own this review", 403);
+    if (Number(oldReview.reviewer_id) !== actorId) return apiError("403 Forbidden: You do not own this review", 403);
 
     const rawBody = await req.json();
     const data = updateSchema.parse(rawBody);
@@ -43,16 +47,16 @@ export async function PUT(req: NextRequest, { params }: { params: any }) {
     const DOMPurify = (await import('isomorphic-dompurify')).default;
     const safeComment = data.comment ? DOMPurify.sanitize(data.comment) : null;
 
-    db.prepare(`
-      UPDATE reviews
-      SET rating = ?, comment = ?, updated_at = datetime('now')
-      WHERE id = ? AND reviewer_id = ?
-    `).run(data.rating, safeComment, targetReviewId, actorId);
+    await db.execute({
+      sql: `UPDATE reviews SET rating = ?, comment = ?, updated_at = datetime('now') WHERE id = ? AND reviewer_id = ?`,
+      args: [data.rating, safeComment, targetReviewId, actorId],
+    });
 
-    const newReview = db.prepare('SELECT * FROM reviews WHERE id = ?').get(targetReviewId);
+    const newResult = await db.execute({ sql: 'SELECT * FROM reviews WHERE id = ?', args: [targetReviewId] });
+    const newReview = newResult.rows[0];
 
     // COMPLIANCE: Audit log of change
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'UPDATE',
       entity_type: 'reviews',
@@ -77,21 +81,28 @@ export async function DELETE(req: NextRequest, { params }: { params: any }) {
     if (!reviewIdStr) return apiError("Missing review ID", 400);
 
     const targetReviewId = parseInt(reviewIdStr, 10);
-    const db = getDb();
+    const db = await getDb();
     const user = await getAuthPayload(req);
     if (!user) return apiError("401 Unauthorized", 401);
 
     const actorId = (user as any)._testLocalId || (user as any).userId;
 
-    const oldReview = db.prepare('SELECT * FROM reviews WHERE id = ? AND deleted_at IS NULL').get(targetReviewId) as any;
+    const oldResult = await db.execute({
+      sql: 'SELECT * FROM reviews WHERE id = ? AND deleted_at IS NULL',
+      args: [targetReviewId],
+    });
+    const oldReview = oldResult.rows[0] as any;
     if (!oldReview) return apiError("Review not found", 404);
-    if (oldReview.reviewer_id !== actorId) return apiError("403 Forbidden: Ownership required", 403);
+    if (Number(oldReview.reviewer_id) !== actorId) return apiError("403 Forbidden: Ownership required", 403);
 
     // SOFT DELETE
-    db.prepare("UPDATE reviews SET deleted_at = datetime('now') WHERE id = ?").run(targetReviewId);
+    await db.execute({
+      sql: "UPDATE reviews SET deleted_at = datetime('now') WHERE id = ?",
+      args: [targetReviewId],
+    });
 
     // COMPLIANCE: Audit SOFT_DELETE
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: actorId,
       action: 'SOFT_DELETE',
       entity_type: 'reviews',
@@ -105,4 +116,3 @@ export async function DELETE(req: NextRequest, { params }: { params: any }) {
     return apiError("Internal server error", 500);
   }
 }
-

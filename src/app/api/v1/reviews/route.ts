@@ -25,11 +25,11 @@ export async function GET(req: NextRequest) {
     return apiError('target_id query param is required and must be a positive integer', 400);
   }
 
-  const db = getDb();
+  const db = await getDb();
   const actorId = (payload as any)?._testLocalId || (payload as any)?.userId || null;
 
-  const reviews = db.prepare(`
-    SELECT
+  const reviewsResult = await db.execute({
+    sql: `SELECT
       r.id,
       r.reviewer_id,
       u.name AS reviewer_name,
@@ -42,31 +42,34 @@ export async function GET(req: NextRequest) {
     JOIN users u ON u.id = r.reviewer_id
     WHERE r.target_id = ? AND r.deleted_at IS NULL
     ORDER BY r.created_at DESC
-    LIMIT 50
-  `).all(targetId);
+    LIMIT 50`,
+    args: [targetId],
+  });
 
-  const agg = db.prepare(`
-    SELECT
+  const aggResult = await db.execute({
+    sql: `SELECT
       ROUND(AVG(rating), 1) AS average_rating,
       COUNT(*) AS total_count
     FROM reviews
-    WHERE target_id = ? AND deleted_at IS NULL
-  `).get(targetId) as { average_rating: number | null; total_count: number };
+    WHERE target_id = ? AND deleted_at IS NULL`,
+    args: [targetId],
+  });
+  const agg = aggResult.rows[0] as any;
 
   // COMPLIANCE: Audit read access to user reputation
-  recordAuditLog(db, req, {
+  await recordAuditLog(db, req, {
     actor_id: actorId,
     action: 'ACCESS',
     entity_type: 'reviews',
     entity_id: targetId,
     old_data: { context: 'User reputation and reviews view' },
-    new_data: { count: reviews.length, rating: agg.average_rating }
+    new_data: { count: reviewsResult.rows.length, rating: agg?.average_rating }
   });
 
   return apiOk({
-    reviews,
-    average_rating: agg.average_rating ?? 0,
-    total_count: agg.total_count,
+    reviews: reviewsResult.rows,
+    average_rating: agg?.average_rating ?? 0,
+    total_count: Number(agg?.total_count ?? 0),
   });
 }
 
@@ -78,15 +81,19 @@ export async function POST(req: NextRequest) {
   if (!user) return apiError("401 Unauthorized", 401);
 
   try {
-    const db = getDb();
+    const db = await getDb();
     const actorId = (user as any)._testLocalId || (user as any).userId;
 
     // Map Auth0 Sub to internal reviewer_id if needed
     let reviewerId = actorId;
     if (!reviewerId && user.sub) {
-      const dbUser = db.prepare('SELECT id FROM users WHERE auth0_sub = ? AND deleted_at IS NULL').get(user.sub) as { id: number };
+      const dbResult = await db.execute({
+        sql: 'SELECT id FROM users WHERE auth0_sub = ? AND deleted_at IS NULL',
+        args: [user.sub],
+      });
+      const dbUser = dbResult.rows[0] as any;
       if (!dbUser) return apiError("401 Unauthorized - Unknown User", 401);
-      reviewerId = dbUser.id;
+      reviewerId = Number(dbUser.id);
     }
 
     const rawBody = await req.json();
@@ -101,30 +108,32 @@ export async function POST(req: NextRequest) {
     }
 
     // Context Violation Check: Negotiation must be completed and NOT deleted
-    const completedNeg = db.prepare(`
-      SELECT id FROM negotiations 
+    const completedNegResult = await db.execute({
+      sql: `SELECT id FROM negotiations 
       WHERE status = 'completed' AND deleted_at IS NULL AND 
         ((buyer_id = ? AND seller_id = ?) OR (buyer_id = ? AND seller_id = ?))
-      LIMIT 1
-    `).get(reviewerId, data.target_id, data.target_id, reviewerId) as { id: number } | undefined;
+      LIMIT 1`,
+      args: [reviewerId, data.target_id, data.target_id, reviewerId],
+    });
 
-    if (!completedNeg) {
+    if (completedNegResult.rows.length === 0) {
       return apiError("403 Forbidden: No completed negotiation found between these users", 403);
     }
+    const completedNeg = completedNegResult.rows[0] as any;
 
-    const result = db.prepare(`
-      INSERT INTO reviews (reviewer_id, target_id, negotiation_id, rating, comment)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(reviewerId, data.target_id, completedNeg.id, data.rating, safeComment);
+    const result = await db.execute({
+      sql: `INSERT INTO reviews (reviewer_id, target_id, negotiation_id, rating, comment) VALUES (?, ?, ?, ?, ?)`,
+      args: [reviewerId, data.target_id, completedNeg.id, data.rating, safeComment],
+    });
 
-    const reviewId = result.lastInsertRowid;
+    const reviewId = Number(result.lastInsertRowid);
 
     // COMPLIANCE: Audit creation
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: reviewerId,
       action: 'CREATE',
       entity_type: 'reviews',
-      entity_id: Number(reviewId),
+      entity_id: reviewId,
       new_data: { target_id: data.target_id, rating: data.rating }
     });
 
@@ -140,6 +149,3 @@ export async function POST(req: NextRequest) {
     return apiError("Internal server error", 500);
   }
 }
-
-
-

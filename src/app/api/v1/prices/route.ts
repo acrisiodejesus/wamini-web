@@ -6,22 +6,21 @@ import { recordAuditLog } from '@/lib/audit';
 export async function GET(req: NextRequest) {
   try {
     const payload = await getAuthPayload(req);
-    const db = getDb();
-    const prices = db.prepare('SELECT * FROM prices ORDER BY product ASC').all();
+    const db = await getDb();
+    const result = await db.execute('SELECT * FROM prices ORDER BY product ASC');
 
     // COMPLIANCE: Audit read access to market prices
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
       action: 'ACCESS',
       entity_type: 'market_prices',
       entity_id: null,
-      new_data: { productCount: prices.length }
+      new_data: { productCount: result.rows.length }
     });
 
-    return apiOk(prices);
+    return apiOk(result.rows);
   } catch (err: any) {
     console.error('Prices GET error:', err);
     return apiError('Erro interno do servidor', 500);
   }
 }
-

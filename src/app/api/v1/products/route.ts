@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || '';
 
     const payload = await getAuthPayload(req);
-    const db = getDb();
+    const db = await getDb();
     
     // Base subqueries with unified columns and unique IDs - Filtering deleted items
     const productBase = `
@@ -65,19 +65,19 @@ export async function GET(req: NextRequest) {
     const unionQuery = finalSubQueries.join(' UNION ALL ');
     const finalQuery = `SELECT * FROM (${unionQuery}) ORDER BY created_at DESC`;
     
-    const results = db.prepare(finalQuery).all(...queryParams);
+    const result = await db.execute({ sql: finalQuery, args: queryParams });
 
     // COMPLIANCE: Auditing read access
-    recordAuditLog(db, req, {
+    await recordAuditLog(db, req, {
       actor_id: (payload as any)?._testLocalId || (payload as any)?.userId || null,
       action: 'ACCESS',
       entity_type: 'products_feed',
       entity_id: null,
       old_data: { filters: { category: categoryQuery, search } },
-      new_data: { count: results.length }
+      new_data: { count: result.rows.length }
     });
 
-    return apiOk(results);
+    return apiOk(result.rows);
   } catch (err: any) {
     console.error('Products GET error:', err);
     return apiError(`Erro interno do servidor: ${err.message}`, 500);
@@ -119,28 +119,21 @@ export async function POST(req: NextRequest) {
       finalPhoto = match ? fallbackImages[match] : fallbackImages['default'];
     }
 
-    const db = getDb();
-    const result = db.prepare(`
-      INSERT INTO products (name, quantity, price, photo, category, location, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      name,
-      quantity ?? 0,
-      price,
-      finalPhoto,
-      category ?? 'PRODUTOS',
-      location ?? null,
-      (payload as any)._testLocalId || (payload as any).userId
-    );
+    const db = await getDb();
+    const actorId = (payload as any)._testLocalId || (payload as any).userId;
+    const result = await db.execute({
+      sql: `INSERT INTO products (name, quantity, price, photo, category, location, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      args: [name, quantity ?? 0, price, finalPhoto, category ?? 'PRODUTOS', location ?? null, actorId],
+    });
 
-    const productId = result.lastInsertRowid;
+    const productId = Number(result.lastInsertRowid);
 
     // COMPLIANCE: Auditing creation
-    recordAuditLog(db, req, {
-      actor_id: (payload as any)._testLocalId || (payload as any).userId,
+    await recordAuditLog(db, req, {
+      actor_id: actorId,
       action: 'CREATE',
       entity_type: 'products',
-      entity_id: Number(productId),
+      entity_id: productId,
       new_data: { name, quantity, price, category, location }
     });
 
@@ -150,4 +143,3 @@ export async function POST(req: NextRequest) {
     return apiError('Erro interno do servidor', 500);
   }
 }
-
